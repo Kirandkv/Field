@@ -45,7 +45,11 @@ supplied and reviewed.
 
 ## Third-party licenses in use
 
-Tracked exactly in the lock file / `pyproject.toml`. As of slice 1: `fastapi`, `pydantic`,
-`rank-bm25`, `pypdf`, `uvicorn`, `pytest` — all permissively licensed (MIT/BSD/Apache-2.0).
-No copyleft dependency is used. Re-verify with a license-checker in CI (see
-`.github/workflows/pr.yml`) rather than trusting this static note as time passes.
+Tracked exactly in the lock file / `pyproject.toml`. As of the Docs + Copilot slice 1s: `fastapi`,
+`pydantic`, `rank-bm25`, `pypdf`, `uvicorn`, `httpx`, `scikit-learn`, `numpy`, `pytest` — all
+permissively licensed (MIT/BSD/Apache-2.0). No copyleft dependency is used. Re-verify with a
+license-checker in CI (see `.github/workflows/pr.yml`) rather than trusting this static note as
+time passes.
+
+`scikit-learn`'s `IsolationForest` (Liu, Ting & Zhou, 2008, "Isolation Forest") is used via its
+public API in `services/anomaly` — the algorithm is not reimplemented, only called.

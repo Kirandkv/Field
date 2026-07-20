@@ -3,7 +3,7 @@
 Legend: **P0** required before any public release · **P1** portfolio differentiation · **P2** polish.
 Complexity: S/M/L.
 
-## P0 — FieldForge Docs slice 1 (this milestone)
+## P0 — FieldForge Docs slice 1 (done)
 
 | ID | Title | Files | Acceptance criteria | Complexity | Depends on |
 |---|---|---|---|---|---|
@@ -30,12 +30,33 @@ Complexity: S/M/L.
 - RBAC (Viewer/Operator/Engineer/Safety Manager/Administrator) enforced server-side
 - OpenTelemetry tracing, MLflow experiment tracking
 
-## P1 — Copilot vertical slice (planned, not started)
+## P0 — FieldForge Copilot slice 1 (done)
 
-- Single agent, explicit state machine, read-only tools first (telemetry, SOP retrieval)
-- Human-approval gate for state-changing tools (draft/create maintenance ticket)
-- ≥50 evaluation scenarios per program brief
-- Flagship demo: methane-spike-vs-sensor-fault scenario
+| ID | Title | Files | Acceptance criteria | Complexity | Depends on |
+|---|---|---|---|---|---|
+| COP-001 | Copilot contracts | `packages/contracts/copilot_models.py` | Device/TelemetryPoint/Alert/Incident/Evidence/ApprovalRequest/ApprovalDecision/MaintenanceTicket/ToolResult; 12-state `IncidentState` enum | S | — |
+| COP-002 | Explicit state machine | `services/agent_copilot/state_machine.py` | Transition table; invalid transitions raise; unit-tested | S | COP-001 |
+| COP-003 | Synthetic telemetry + Isolation Forest | `data/generators/generate_telemetry.py`, `services/anomaly/` | 3 devices, 4 alert scenarios, deterministic seed; real scikit-learn `IsolationForest` per device | M | — |
+| COP-004 | Agent tools + orchestrator | `services/agent_copilot/tools.py`, `orchestrator.py` | 6 read-only tools + draft; `retrieve_sop` is a real HTTP call to the Docs API with graceful degradation; SOP-014 corroboration policy implemented | M | COP-001..003 |
+| COP-005 | FastAPI app with approval gate | `apps/copilot_api/` | `/alerts`, `/incidents`, `/approvals`, `/approvals/{id}/decision` (role-checked server-side), `/tickets` | M | COP-004 |
+| COP-006 | Tests + eval scenarios | `tests/`, `evals/datasets/copilot_scenarios_v1.jsonl` | State-machine invalid-transition tests; 12 scenarios (classification ×4, approve/reject/modify, RBAC ×2, idempotency, tool-failure, degraded-evidence); baseline committed | M | COP-005 |
+
+All six shipped; see [evals/reports](../evals/reports) for the measured baseline
+(`goal_completion_rate=1.0`, `unauthorized_action_prevention_rate=1.0` on the current 12-scenario set).
+
+## P1 — Copilot milestone 2 (planned, not started)
+
+- Remaining 11 of 17 program-brief tools: `check_camera_service`, `check_ocr_service`,
+  `check_network_health`, `search_previous_incidents`, `retrieve_manual` (separate from
+  `retrieve_sop`), `draft_operator_notification`, `send_operator_notification`,
+  `request_service_restart`, `generate_incident_report`, `calculate_rate_of_change` and
+  `detect_missing_data` as standalone tools (currently folded into `summarize_telemetry_window`)
+- Scale evaluation scenarios from 12 to the program brief's ≥50
+- `PARTIAL` and `CANCELLED` (human-approval-timeout) states — see ADR 0002
+- Automatic retry/escalation policy for `REQUESTING_MORE_EVIDENCE` (currently terminal)
+- Real-time telemetry chart, incident replay, agent-state visualization (needs a web UI first)
+- English/Arabic incident summaries
+- LangGraph adoption once Mesh needs multi-agent graph composition (ADR 0002 decision 1)
 
 ## P1 — Mesh vertical slice (planned, not started)
 

@@ -27,14 +27,22 @@ jobs:
       - name: Pytest
         run: pytest -q
 
-      - name: Generate synthetic corpus
-        run: python data/generators/generate_corpus.py
+      - name: Generate synthetic corpora
+        run: |
+          python data/generators/generate_corpus.py
+          python data/generators/generate_telemetry.py
 
-      - name: Run deterministic evaluation suite
+      - name: Run FieldForge Docs evaluation suite
         run: python scripts/run_eval.py
 
-      - name: Quality gate — guardrail eval must stay at 100%
+      - name: Quality gate — Docs guardrail eval must stay at 100%
         run: python scripts/check_guardrail_gate.py
 
-      - name: Docker build
+      - name: Run FieldForge Copilot evaluation suite
+        run: python scripts/run_copilot_eval.py
+
+      - name: Docker build — Docs API
         run: docker build -f infra/docker/docs_api.Dockerfile -t fieldforge-docs-api:pr .
+
+      - name: Docker build — Copilot API
+        run: docker build -f infra/docker/copilot_api.Dockerfile -t fieldforge-copilot-api:pr .

@@ -11,6 +11,7 @@ python -m venv .venv
 .venv\Scripts\activate        # Windows
 pip install -e ".[dev]"
 python data/generators/generate_corpus.py
+python data/generators/generate_telemetry.py
 ```
 
 ## Before opening a PR
@@ -20,10 +21,13 @@ ruff check .
 mypy packages services apps scripts evals
 pytest -q
 python scripts/run_eval.py
+python scripts/run_copilot_eval.py
 ```
 
-All four must pass. The guardrail eval must stay at 100% (see
-`scripts/check_guardrail_gate.py`) — that's the one hard quality gate slice 1 enforces.
+All five must pass. The Docs guardrail eval must stay at 100% (see
+`scripts/check_guardrail_gate.py`); the Copilot scenario suite must stay at 100% (it
+exits non-zero on any failing scenario) — those are the two hard quality gates slice 1
+enforces.
 
 ## Conventions
 

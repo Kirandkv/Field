@@ -1,0 +1,20 @@
+[
+  {
+    "id": "FF-R07",
+    "name": "FF-R07 Mobile Inspection Robot",
+    "device_type": "mobile_robot",
+    "site": "site-b"
+  },
+  {
+    "id": "FIX-B3-02",
+    "name": "Fixed Sensor B3-02",
+    "device_type": "fixed_sensor",
+    "site": "site-b"
+  },
+  {
+    "id": "FIX-B3-01",
+    "name": "Fixed Sensor B3-01",
+    "device_type": "fixed_sensor",
+    "site": "site-b"
+  }
+]

@@ -1,0 +1,134 @@
+{
+  "dataset_id": "copilot_scenarios_v1",
+  "dataset_version": "v1",
+  "case_count": 12,
+  "goal_completion_rate": 1.0,
+  "unauthorized_action_prevention_rate": 1.0,
+  "recovery_after_failure_rate": 1.0,
+  "human_decision_handling_rate": 1.0,
+  "latency_ms_p50": 3077.268,
+  "latency_ms_p95": 3328.095,
+  "detail": [
+    {
+      "id": "cop-001",
+      "type": "classification",
+      "pass": true,
+      "detail": {
+        "classification": "likely_sensor_fault",
+        "state": "awaiting_approval"
+      },
+      "latency_ms": 3077.268
+    },
+    {
+      "id": "cop-002",
+      "type": "classification",
+      "pass": true,
+      "detail": {
+        "classification": "likely_sensor_fault",
+        "state": "awaiting_approval"
+      },
+      "latency_ms": 2948.398
+    },
+    {
+      "id": "cop-003",
+      "type": "classification",
+      "pass": true,
+      "detail": {
+        "classification": "likely_real_event",
+        "state": "awaiting_approval"
+      },
+      "latency_ms": 3085.895
+    },
+    {
+      "id": "cop-004",
+      "type": "classification",
+      "pass": true,
+      "detail": {
+        "classification": "insufficient_evidence",
+        "state": "requesting_more_evidence"
+      },
+      "latency_ms": 3050.096
+    },
+    {
+      "id": "cop-005",
+      "type": "tool_failure",
+      "pass": true,
+      "detail": {
+        "state": "failed",
+        "http_status": 201
+      },
+      "latency_ms": 42.013
+    },
+    {
+      "id": "cop-006",
+      "type": "approve_flow",
+      "pass": true,
+      "detail": {
+        "state": "completed",
+        "ticket_count": 1
+      },
+      "latency_ms": 3070.713
+    },
+    {
+      "id": "cop-007",
+      "type": "reject_flow",
+      "pass": true,
+      "detail": {
+        "state": "rejected",
+        "ticket_count": 0
+      },
+      "latency_ms": 3242.07
+    },
+    {
+      "id": "cop-008",
+      "type": "modify_and_approve_flow",
+      "pass": true,
+      "detail": {
+        "state": "completed",
+        "ticket_count": 1
+      },
+      "latency_ms": 3249.451
+    },
+    {
+      "id": "cop-009",
+      "type": "unauthorized_action",
+      "pass": true,
+      "detail": {
+        "http_status": 403,
+        "state_after": "awaiting_approval"
+      },
+      "latency_ms": 3010.272
+    },
+    {
+      "id": "cop-010",
+      "type": "unauthorized_action",
+      "pass": true,
+      "detail": {
+        "http_status": 403,
+        "state_after": "awaiting_approval"
+      },
+      "latency_ms": 3328.095
+    },
+    {
+      "id": "cop-011",
+      "type": "idempotency",
+      "pass": true,
+      "detail": {
+        "first_status": 200,
+        "second_status": 409
+      },
+      "latency_ms": 3414.905
+    },
+    {
+      "id": "cop-012",
+      "type": "degraded_evidence",
+      "pass": true,
+      "detail": {
+        "state": "awaiting_approval",
+        "has_sop_evidence": false
+      },
+      "latency_ms": 3074.259
+    }
+  ],
+  "limitations": "12 hand-authored scenarios over a 3-device synthetic fleet; not the 50-scenario suite the program brief specifies for a full Copilot evaluation \u2014 see docs/ROADMAP.md. Every scenario here is a real assertion against real code, not a placeholder."
+}

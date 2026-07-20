@@ -1,4 +1,4 @@
-# FieldForge Docs — slice 1. Single service: no Postgres/Qdrant/Redis dependency yet
+# FieldForge AI Suite — slice 1. Two services, no Postgres/Qdrant/Redis dependency yet
 # (see ADR 0001 and docs/ROADMAP.md — those land at milestone M2 alongside dense
 # retrieval and a real multi-writer deployment scenario that justifies them).
 services:
@@ -11,5 +11,19 @@ services:
     volumes:
       - docs_api_data:/data
 
+  copilot_api:
+    build:
+      context: .
+      dockerfile: infra/docker/copilot_api.Dockerfile
+    ports:
+      - "8010:8010"
+    environment:
+      - FIELDFORGE_DOCS_API_URL=http://docs_api:8000
+    depends_on:
+      - docs_api
+    volumes:
+      - copilot_api_data:/data
+
 volumes:
   docs_api_data:
+  copilot_api_data:

@@ -83,13 +83,40 @@ get a grounded, cited answer — running end-to-end locally with one command, wi
 
 ## 6. Milestones
 
-| # | Milestone | Depends on |
-|---|---|---|
-| M1 | Docs vertical slice 1 (this doc, §4) | — |
-| M2 | Docs: OCR + multimodal + Qdrant hybrid retrieval + web UI | M1 |
-| M3 | Copilot vertical slice (single agent, human approval, one flagship scenario) | M1 |
-| M4 | Mesh vertical slice (2+ agents, one MCP server, one A2A task) | M3 |
-| M5 | Ops vertical slice (trace explorer + one quality gate demo) | M3 |
-| M6 | Edge profile | M2 |
+| # | Milestone | Status | Depends on |
+|---|---|---|---|
+| M1 | Docs vertical slice 1 (this doc, §4) | Done | — |
+| M2 | Docs: OCR + multimodal + Qdrant hybrid retrieval + web UI | Planned | M1 |
+| M3 | Copilot vertical slice (single agent, human approval, one flagship scenario) | Done | M1 |
+| M4 | Mesh vertical slice (2+ agents, one MCP server, one A2A task) | Planned | M3 |
+| M5 | Ops vertical slice (trace explorer + one quality gate demo) | Planned | M3 |
+| M6 | Edge profile | Planned | M2 |
 
 See [ROADMAP.md](ROADMAP.md) for the issue-level backlog.
+
+## 7. Milestone M3: FieldForge Copilot — vertical slice 1
+
+**Goal:** one complete supervised-agent workflow — alert → investigate (telemetry +
+anomaly score + cross-service SOP retrieval) → propose action → human approval →
+execute — running end to end locally, sharing the corpus and services already built
+for Docs rather than a disconnected demo dataset.
+
+### User story
+> As a safety manager, I receive a methane alert investigated by Copilot, see the
+> evidence it gathered (telemetry, anomaly score, cited SOP text) and its concise
+> reasoning, and approve, reject, or modify the proposed action — nothing happens to
+> the fleet without my decision.
+
+### In scope for slice 1
+Explicit 12-state incident state machine; 6 read-only/preparatory tools plus a
+human-gated `create_maintenance_ticket`; real scikit-learn Isolation Forest anomaly
+scoring per device; `retrieve_sop` as a genuine HTTP call to the Docs API with tested
+graceful degradation; server-enforced approval RBAC; 12 scenario-level eval cases.
+See [docs/architecture/COPILOT_OVERVIEW.md](architecture/COPILOT_OVERVIEW.md) for the
+full diagrams and [ADR 0002](adr/0002-copilot-agent-architecture.md) for the
+architecture decisions.
+
+### Explicitly out of scope for slice 1
+11 of the program brief's 17 tools, `PARTIAL`/`CANCELLED` states, automatic
+retry/escalation, voice/bilingual briefings, a web UI, and the ≥50-scenario eval
+suite (currently 12) — see [docs/ROADMAP.md](ROADMAP.md).

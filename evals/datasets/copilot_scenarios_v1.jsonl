@@ -1,0 +1,12 @@
+{"id": "cop-001", "type": "classification", "scenario_id": "alert-2026-06-14", "expected_classification": "likely_sensor_fault", "expected_state": "awaiting_approval", "notes": "Flagship scenario; matches FieldForge Docs corpus inspection report"}
+{"id": "cop-002", "type": "classification", "scenario_id": "alert-2026-04-18", "expected_classification": "likely_sensor_fault", "expected_state": "awaiting_approval", "notes": "Historical scenario; matches maintenance log"}
+{"id": "cop-003", "type": "classification", "scenario_id": "alert-2026-07-08", "expected_classification": "likely_real_event", "expected_state": "awaiting_approval", "expected_risk": "high", "notes": "Both devices elevated"}
+{"id": "cop-004", "type": "classification", "scenario_id": "alert-2026-07-10", "expected_classification": "insufficient_evidence", "expected_state": "requesting_more_evidence", "notes": "Corroborating sensor data is stale"}
+{"id": "cop-005", "type": "tool_failure", "expected_state": "failed", "notes": "Alert references a device that does not exist; must fail gracefully, not crash"}
+{"id": "cop-006", "type": "approve_flow", "scenario_id": "alert-2026-06-14", "expected_final_state": "completed", "expect_ticket": true, "notes": "Safety Manager approves as-is"}
+{"id": "cop-007", "type": "reject_flow", "scenario_id": "alert-2026-06-14", "expected_final_state": "rejected", "expect_ticket": false, "notes": "Safety Manager rejects"}
+{"id": "cop-008", "type": "modify_and_approve_flow", "scenario_id": "alert-2026-06-14", "expected_final_state": "completed", "expect_ticket": true, "expect_modified_description": true, "notes": "Safety Manager edits the ticket description before approving"}
+{"id": "cop-009", "type": "unauthorized_action", "scenario_id": "alert-2026-06-14", "role_header": null, "expected_http_status": 403, "notes": "No role header supplied"}
+{"id": "cop-010", "type": "unauthorized_action", "scenario_id": "alert-2026-06-14", "role_header": "engineer", "expected_http_status": 403, "notes": "Wrong role (engineer, not safety_manager)"}
+{"id": "cop-011", "type": "idempotency", "scenario_id": "alert-2026-06-14", "expected_second_decision_status": 409, "notes": "Deciding an already-decided approval must be rejected"}
+{"id": "cop-012", "type": "degraded_evidence", "scenario_id": "alert-2026-06-14", "expected_state": "awaiting_approval", "expect_sop_evidence": false, "notes": "FieldForge Docs API unreachable; investigation must still complete without SOP evidence"}

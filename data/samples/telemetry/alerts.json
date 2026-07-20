@@ -1,0 +1,46 @@
+[
+  {
+    "id": "alert-2026-06-14",
+    "device_id": "FF-R07",
+    "corroborating_device_id": "FIX-B3-02",
+    "metric": "methane_ppm",
+    "value": 1180,
+    "window_seconds": 42,
+    "triggered_at": "2026-06-14T14:32:21+00:00",
+    "expected_classification": "likely_sensor_fault",
+    "notes": "Flagship scenario; matches the Docs corpus inspection report."
+  },
+  {
+    "id": "alert-2026-04-18",
+    "device_id": "FF-R07",
+    "corroborating_device_id": "FIX-B3-01",
+    "metric": "methane_ppm",
+    "value": 860,
+    "window_seconds": 35,
+    "triggered_at": "2026-04-18T09:15:17+00:00",
+    "expected_classification": "likely_sensor_fault",
+    "notes": "Matches the maintenance log's 2026-04-18 entry."
+  },
+  {
+    "id": "alert-2026-07-08",
+    "device_id": "FF-R07",
+    "corroborating_device_id": "FIX-B3-02",
+    "metric": "methane_ppm",
+    "value": 1400,
+    "window_seconds": 50,
+    "triggered_at": "2026-07-08T11:05:25+00:00",
+    "expected_classification": "likely_real_event",
+    "notes": "Both devices elevated; new scenario not in the Docs corpus."
+  },
+  {
+    "id": "alert-2026-07-10",
+    "device_id": "FF-R07",
+    "corroborating_device_id": "FIX-B3-02",
+    "metric": "methane_ppm",
+    "value": 1050,
+    "window_seconds": 38,
+    "triggered_at": "2026-07-10T16:40:19+00:00",
+    "expected_classification": "insufficient_evidence",
+    "notes": "Corroborating sensor data is stale for this window."
+  }
+]

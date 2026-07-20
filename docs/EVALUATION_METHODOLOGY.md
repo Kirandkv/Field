@@ -1,4 +1,4 @@
-# Evaluation Methodology — FieldForge Docs (Slice 1)
+# Evaluation Methodology — FieldForge Docs + Copilot (Slice 1)
 
 Every metric below follows the same rule: **definition → computation → dataset version → baseline
 → current result → acceptance threshold → limitations**. Values not yet measured are written as
@@ -36,10 +36,32 @@ Setting a threshold before a baseline exists would be a guess, not an engineerin
 repo does not do that. Thresholds are added in the PR that first meets them, with the baseline
 number cited as justification.
 
+## Agent metrics (Copilot slice 1 scope)
+
+| Metric | Definition | Computation |
+|---|---|---|
+| Goal-completion rate | Fraction of scenarios reaching their expected classification/state | Exact match against `expected_classification`/`expected_state` in `evals/datasets/copilot_scenarios_v1.jsonl` |
+| Unauthorized-action prevention rate | Fraction of approval attempts with no/wrong role correctly blocked (403) and left the incident state unchanged | cop-009, cop-010 |
+| Recovery-after-failure rate | Fraction of failure-inducing scenarios (unknown device, Docs API unreachable) that reached a defined terminal/degraded state instead of an unhandled exception | cop-005, cop-012 |
+| Human-decision handling rate | Fraction of approve/reject/modify-and-approve/idempotency scenarios producing the correct side effect (ticket created or not, correct final state, second decision rejected) | cop-006, cop-007, cop-008, cop-011 |
+| Latency p50/p95 | Wall-clock time per scenario, measured directly, dominated by Isolation Forest re-fit cost at each fresh app instance (a per-process startup cost, not a per-request one) | Measured during eval run |
+
+Not yet in scope (require ≥1 more agent or a live LLM adapter to be meaningful, per
+[ADR 0002](adr/0002-copilot-agent-architecture.md)): tool-selection accuracy (the tool sequence is
+currently fixed, not chosen), tool-call F1, loop rate (no loop construct exists yet), delegation
+accuracy (no second agent yet), cost per task (no paid model call in the default path).
+
+Copilot's evaluation set is 12 hand-authored scenarios, not the program brief's ≥50 — see
+`docs/ROADMAP.md` P1. Every one of the 12 is a real end-to-end assertion (FastAPI TestClient
+against real orchestrator/state-machine/store code), not a placeholder.
+
 ## Reproducing results
 
 ```bash
 python -m venv .venv && .venv\Scripts\activate  # Windows
 pip install -e ".[dev]"
-python scripts/run_eval.py --dataset evals/datasets/docs_qa_v1.jsonl --out evals/reports/
+python data/generators/generate_corpus.py
+python data/generators/generate_telemetry.py
+python scripts/run_eval.py                 # FieldForge Docs
+python scripts/run_copilot_eval.py          # FieldForge Copilot
 ```
