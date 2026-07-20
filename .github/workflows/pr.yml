@@ -1,0 +1,40 @@
+name: PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-test-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Mypy
+        run: mypy packages services apps scripts evals
+
+      - name: Pytest
+        run: pytest -q
+
+      - name: Generate synthetic corpus
+        run: python data/generators/generate_corpus.py
+
+      - name: Run deterministic evaluation suite
+        run: python scripts/run_eval.py
+
+      - name: Quality gate — guardrail eval must stay at 100%
+        run: python scripts/check_guardrail_gate.py
+
+      - name: Docker build
+        run: docker build -f infra/docker/docs_api.Dockerfile -t fieldforge-docs-api:pr .

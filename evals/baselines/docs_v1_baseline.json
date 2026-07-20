@@ -1,0 +1,12 @@
+{
+  "dataset_id": "docs_qa_v1",
+  "dataset_version": "v1",
+  "case_count": 20,
+  "recall_at_5": 1.0,
+  "mrr": 0.903,
+  "refusal_accuracy": 0.9,
+  "citation_correctness": 1.0,
+  "latency_ms_p50": 2.155,
+  "latency_ms_p95": 2.628,
+  "limitations": "Small corpus (7 documents); recall/MRR are indicative for this project's own regression testing, not representative of production-scale corpora. citation_correctness here is the automated resolve-check only (does the cited chunk id exist), not a semantic-support judgment \u2014 see docs/EVALUATION_METHODOLOGY.md."
+}

@@ -1,0 +1,15 @@
+# FieldForge Docs — slice 1. Single service: no Postgres/Qdrant/Redis dependency yet
+# (see ADR 0001 and docs/ROADMAP.md — those land at milestone M2 alongside dense
+# retrieval and a real multi-writer deployment scenario that justifies them).
+services:
+  docs_api:
+    build:
+      context: .
+      dockerfile: infra/docker/docs_api.Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - docs_api_data:/data
+
+volumes:
+  docs_api_data:
