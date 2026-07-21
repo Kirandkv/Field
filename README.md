@@ -12,6 +12,18 @@ reproducible run.
 > **FieldForge Mesh**, **FieldForge Ops**, and **FieldForge Edge** (each vertical
 > slice 1). See [docs/ROADMAP.md](docs/ROADMAP.md) for what's planned next.
 
+## Live run
+
+**[See it running →](https://claude.ai/code/artifact/47c92f54-b145-4d44-822f-8e6e09c7c031)**
+— all five services started locally, real HTTP requests fired at each one, real
+responses captured verbatim (trace IDs, timestamps, latencies, the works). No
+screenshots of a UI, because there isn't one to screenshot — every product in this
+suite is an API. The linked page *is* the demo: document ingestion and a cited
+answer, a guardrail blocking a prompt-injection attempt, an incident investigated
+and approved end-to-end, two separate processes talking real A2A, the Ops quality
+gate passing on real eval reports, and an Edge resource snapshot with a live
+SQLite backup.
+
 ## Measured results
 
 **FieldForge Docs** — `evals/reports`, corpus = `data/samples/*.md` (7 docs)
@@ -117,14 +129,27 @@ Docs: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md). Copilot:
 [docs/architecture/OPS_OVERVIEW.md](docs/architecture/OPS_OVERVIEW.md). Edge:
 [docs/architecture/EDGE_OVERVIEW.md](docs/architecture/EDGE_OVERVIEW.md).
 
-## Quick start
+## How to use
+
+### 1. Install and generate the synthetic corpus
 
 ```bash
+git clone https://github.com/Kirandkv/Field.git fieldforge && cd fieldforge
 python -m venv .venv && .venv\Scripts\activate    # Windows; source .venv/bin/activate elsewhere
 pip install -e ".[dev]"
-python data/generators/generate_corpus.py
-python data/generators/generate_telemetry.py
+python data/generators/generate_corpus.py     # writes data/samples/*.md (deterministic, seeded)
+python data/generators/generate_telemetry.py  # writes data/samples/telemetry/*.jsonl
+```
 
+### 2. Start the services
+
+Each product is its own FastAPI process — start the ones you want to try in
+separate terminals. **Ports are hardcoded and cross-referenced between services**
+(Copilot calls Docs at `FIELDFORGE_DOCS_API_URL`, default `localhost:8000`) — if a
+port is already taken on your machine, override the env var rather than just
+changing `--port`, or the calling service won't find it.
+
+```bash
 # Terminal 1 — Docs (Copilot's retrieve_sop tool calls this)
 uvicorn fieldforge_docs_api.main:app --port 8000
 # Terminal 2 — Copilot
@@ -137,8 +162,23 @@ uvicorn fieldforge_mesh_commander.main:app --port 8022
 uvicorn fieldforge_ops_api.main:app --port 8030
 ```
 
-Copilot demo — an FF-R07 methane alert investigated end-to-end, cross-checked
-against the SOP FieldForge Docs is serving live:
+Each one exposes interactive Swagger docs at `/docs` (e.g.
+`http://localhost:8000/docs`) if you'd rather click through requests than curl them.
+
+### 3. Docs — ingest documents, then ask questions
+
+Docs starts with an empty index; upload the sample corpus (or your own
+`.txt`/`.md`/`.pdf`) before querying:
+
+```bash
+for f in data/samples/*.md; do curl -X POST http://localhost:8000/documents -F "file=@$f"; done
+
+curl -X POST http://localhost:8000/query -H "Content-Type: application/json" \
+  -d '{"question":"What should I do if the methane sensor reads above 500 ppm?"}'
+# -> extractive answer with per-sentence citations (source_id, chunk_id, verbatim quote)
+```
+
+### 4. Copilot — an incident investigated end-to-end
 
 ```bash
 curl -X POST http://localhost:8010/demo/scenarios/alert-2026-06-14/trigger
@@ -150,8 +190,7 @@ curl -X POST http://localhost:8010/approvals/<id>/decision \
 # -> {"state": "completed", ...}; GET /tickets now shows the created ticket
 ```
 
-Mesh demo — the same incident, investigated by two separate agent processes
-talking A2A instead of one Python function calling another:
+### 5. Mesh — the same incident, over real A2A between two processes
 
 ```bash
 curl -X POST http://localhost:8022/agents/discover -H "Content-Type: application/json" \
@@ -162,8 +201,7 @@ curl -X POST http://localhost:8022/incidents -H "Content-Type: application/json"
 #     "requires_human_approval": true, "analyst_finding": {...}, "delegation_log": [...]}
 ```
 
-Ops demo — ingest the real eval reports from the other three products and run the
-quality gate against their committed baselines:
+### 6. Ops — ingest real eval reports and run the quality gate
 
 ```bash
 python scripts/run_eval.py && python scripts/run_copilot_eval.py && python scripts/run_mesh_eval.py
@@ -173,20 +211,32 @@ python scripts/ingest_eval_reports.py --ops-url http://localhost:8030
 #    quality gate mesh/mesh_scenarios_v1: pass
 ```
 
-Edge demo — same Docs process, toggled into offline hybrid retrieval + local
-generative answers via env vars (needs Ollama with `nomic-embed-text` and a chat
-model pulled):
+### 7. Edge — same Docs process, toggled offline-first
+
+Needs [Ollama](https://ollama.com) running locally with `nomic-embed-text` and a
+chat model pulled (`ollama pull nomic-embed-text && ollama pull qwen2.5:0.5b`).
+Restart the Docs process from step 2 with two extra env vars instead of plain
+`uvicorn`:
 
 ```bash
 FIELDFORGE_RETRIEVAL_MODE=hybrid FIELDFORGE_ANSWER_MODE=generative \
   uvicorn fieldforge_docs_api.main:app --port 8000
 curl http://localhost:8000/edge/resources        # psutil + Ollama /api/ps snapshot
-curl -X POST http://localhost:8000/edge/backup    # SQLite online-backup API
+curl -X POST http://localhost:8000/edge/backup   # SQLite online-backup API
 ```
 
-Or run everything (lint, typecheck, tests, all three products' eval suites) in one
-shot: `make check`. Edge's comparison benchmark is separate (`make edge-benchmark`)
-since it needs Ollama installed.
+`/edge/resources` and `/edge/backup`/`/edge/restore` are always available on the
+Docs process regardless of mode — only retrieval/generation behavior changes.
+
+### 8. Verify everything at once
+
+```bash
+make check           # lint, typecheck, full test suite, Docs/Copilot/Mesh evals
+make edge-benchmark   # Edge comparison eval — needs Ollama, not included in `make check`
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full pre-PR checklist and what each
+check gates.
 
 ## Problem
 
