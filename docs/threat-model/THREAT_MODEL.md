@@ -1,6 +1,6 @@
-# Threat Model — FieldForge Docs + Copilot + Mesh + Ops (Slice 1)
+# Threat Model — FieldForge Docs + Copilot + Mesh + Ops + Edge (Slice 1)
 
-Scope: this document covers what is **implemented** across FieldForge Docs, Copilot, Mesh, and Ops
+Scope: this document covers what is **implemented** across all five FieldForge products'
 slice 1. Threats relevant to Mesh's not-yet-built roles (Document Intelligence, Vision Inspection,
 Maintenance Planner, Report Agent) are listed for suite-level completeness but marked **N/A (not
 built)** — listing them now avoids retrofitting security review later.
@@ -31,6 +31,8 @@ Methodology: STRIDE-flavored, enumerated against the suite's required threat lis
 | 20 | Observability becoming a new availability dependency (Ops going down/slow breaking the product it observes) | Implemented | `export_span()` is fire-and-forget (`asyncio.create_task`, not awaited) with a 2s timeout and every exception swallowed; tested with an intentionally unreachable Ops URL — `tests/unit/test_tracing.py::test_export_span_sync_fallback_swallows_unreachable_errors` | — |
 | 21 | Sensitive data leakage via trace export | Implemented | `TraceSpan` only ever carries method/path/status/duration/service/trace_id — request/response bodies, headers, and query parameters are never included, so there is nothing to redact because it's never captured | Structured redaction policy once real request metadata is exported (M2) |
 | 22 | Quality-gate bypass (deploying a regressed evaluation run) | Implemented | `POST /deployments` requires the linked `EvaluationRun`'s most recent `QualityGateResult` to be `decision == pass`; missing or failed gate returns 409, tested in `tests/integration/test_ops_api.py::test_deployment_blocked_without_passing_gate`/`::test_deployment_blocked_after_failing_gate` and the full sequence in `tests/integration/test_ops_regression_demo.py` | Signed evaluation reports (today's ingestion trusts the caller's JSON body) — M2 |
+| 23 | Generative-model hallucination / citation fabrication (Edge's local LLM path, unlike the extractive default, can genuinely invent text) | Implemented | Every citation's `chunk_id` and `quote` are checked against the actual retrieved evidence before being trusted; any failure falls back to the deterministic extractive adapter rather than surfacing an unverified answer — this is not theoretical, it was observed live during development (a 0.5B model hallucinated both a wrong chunk_id and an altered quote) and correctly caught. See ADR 0005 decision 4, `tests/unit/test_ollama_adapters.py::test_generative_adapter_rejects_citation_with_fabricated_quote` | — |
+| 24 | Arbitrary local file read via the backup-restore endpoint (`POST /edge/restore` restoring from a caller-supplied path) | Implemented | `backup_path` is resolved and checked to be inside the configured backup directory before use; a path outside it returns 400, tested in `tests/integration/test_docs_api_edge_mode.py::test_restore_path_outside_backup_dir_is_rejected` | Per-role authorization on the restore endpoint once suite-wide RBAC lands (M2) |
 
 ## Out of scope for slice 1 (tracked, not silently dropped)
 
@@ -53,5 +55,7 @@ are covered by [evals/datasets/mesh_scenarios_v1.jsonl](../../evals/datasets/mes
 inline above. Ops' rows 20, 21, 22 are covered by `tests/unit/test_tracing.py` and
 `tests/integration/test_ops_api.py`/`test_ops_regression_demo.py` — Ops doesn't have its own
 adversarial JSONL dataset in slice 1 since its attack surface (gate bypass, export
-availability) is small enough to cover directly in integration tests. Results for all:
-[evals/reports](../../evals/reports).
+availability) is small enough to cover directly in integration tests. Edge's rows 23, 24 are
+covered by `tests/unit/test_ollama_adapters.py` (citation guardrail, including tests that
+don't require Ollama to be running) and `tests/integration/test_docs_api_edge_mode.py`
+(restore path containment). Results for all: [evals/reports](../../evals/reports).

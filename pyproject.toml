@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fieldforge"
 version = "0.1.0"
-description = "FieldForge AI Suite — monorepo package root (Docs + Copilot + Mesh + Ops slice 1)"
+description = "FieldForge AI Suite — monorepo package root (Docs + Copilot + Mesh + Ops + Edge slice 1)"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 dependencies = [
@@ -19,6 +19,8 @@ dependencies = [
     "scikit-learn>=1.5,<1.6",
     "numpy>=2.0,<3",
     "mcp>=1.28,<2",
+    "qdrant-client>=1.18,<2",
+    "psutil>=7.0,<8",
 ]
 
 [project.optional-dependencies]

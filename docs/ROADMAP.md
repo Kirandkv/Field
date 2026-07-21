@@ -111,9 +111,36 @@ a faster (better) run was reported as a failing regression — see
 - Trace-explorer / evaluation-comparison web UI
 - Signed evaluation reports (today's ingestion trusts the caller's JSON body)
 
+## P0 — FieldForge Edge slice 1 (done)
+
+| ID | Title | Files | Acceptance criteria | Complexity | Depends on |
+|---|---|---|---|---|---|
+| EDGE-001 | Real local dense embeddings | `services/retrieval/fieldforge_retrieval/ollama_embedding.py` | Implements the `EmbeddingAdapter` interface ADR 0001 deferred; real Ollama HTTP calls, `.available` health-checks the model is actually pulled | S | — |
+| EDGE-002 | Embedded local Qdrant | `services/retrieval/fieldforge_retrieval/dense.py` | No server/Docker — `QdrantClient(path=...)`; wired into the existing `reciprocal_rank_fusion` for real hybrid retrieval | M | EDGE-001 |
+| EDGE-003 | Local generative answers + citation guardrail | `packages/model_adapters/fieldforge_model_adapters/ollama_adapter.py` | Strict-JSON prompting; every citation's chunk_id and quote verified against real retrieved evidence; falls back to `ExtractiveAnswerAdapter` on any failure — observed live catching a real hallucination during development | M | — |
+| EDGE-004 | Config-driven Edge mode in docs_api | `apps/docs_api/config.py`, `main.py` | `FIELDFORGE_RETRIEVAL_MODE`/`FIELDFORGE_ANSWER_MODE`, both default to unchanged slice-1 behavior; zero regression in existing tests | S | EDGE-002, EDGE-003 |
+| EDGE-005 | Resource monitoring + backup/restore | `apps/docs_api/edge.py`, `store.py` | Real `psutil` + Ollama `/api/ps` snapshot; SQLite online-backup API; restore path confined to the configured backup directory (found and fixed a path-traversal gap during testing) | M | — |
+| EDGE-006 | Tests + comparison benchmark | `tests/unit/test_ollama_adapters.py`, `tests/integration/test_docs_api_edge_mode.py`, `scripts/run_edge_comparison_eval.py` | 17 new tests, all skip (not fail) when Ollama isn't reachable; real measured sparse+extractive vs. hybrid+generative comparison plus a small-vs-larger local model fallback-rate comparison | M | EDGE-004, EDGE-005 |
+
+All six shipped. Two real bugs found and fixed while building this slice: an
+`OllamaEmbeddingAdapter`/`OllamaGenerativeAdapter` host-configuration override that
+silently had no effect due to a module-level constant frozen at import time, and an
+unrestricted `/edge/restore` path that could read any file the process could access
+— see [ADR 0005](adr/0005-edge-offline-profile.md). Measured comparison results:
+`evals/reports/edge_comparison_v1_report.json`.
+
+## P1 — Edge milestone 2 (planned, not started)
+
+- Encrypted local document storage, local audit log — see ADR 0005 decision 6 for why
+  deferred rather than half-built
+- GPU and Jetson hardware-profile benchmarks (this environment has neither)
+- Offline English-Arabic retrieval (needs the Arabic corpus from Docs M2 first)
+- Network-disconnection / cloud-sync-conflict simulation (no real cloud deployment
+  exists yet to conflict with)
+- Real Docker-based Qdrant server as an alternative to embedded mode
+
 ## P2 — Polish (planned)
 
-- FieldForge Edge offline profile
 - Demo GIF, video scripts, portfolio page copy (only after P0/P1 numbers are real)
 
 ## Non-negotiables carried on every item

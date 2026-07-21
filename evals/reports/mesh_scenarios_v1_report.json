@@ -6,8 +6,8 @@
   "delegation_accuracy": 1.0,
   "graceful_degradation_rate": 1.0,
   "agent_discovery_success_rate": 1.0,
-  "latency_ms_p50": 2756.257,
-  "latency_ms_p95": 3404.357,
+  "latency_ms_p50": 1229.168,
+  "latency_ms_p95": 2653.398,
   "detail": [
     {
       "id": "mesh-001",
@@ -17,7 +17,7 @@
         "safety_decision": "recommend_recalibration_pending_safety_review",
         "disagreement_flag": false
       },
-      "latency_ms": 2756.257
+      "latency_ms": 1229.168
     },
     {
       "id": "mesh-002",
@@ -27,7 +27,7 @@
         "safety_decision": "recommend_recalibration_pending_safety_review",
         "disagreement_flag": false
       },
-      "latency_ms": 2701.824
+      "latency_ms": 1226.347
     },
     {
       "id": "mesh-003",
@@ -37,7 +37,7 @@
         "safety_decision": "escalate_immediately_to_safety_manager",
         "disagreement_flag": false
       },
-      "latency_ms": 2869.843
+      "latency_ms": 1240.573
     },
     {
       "id": "mesh-004",
@@ -47,7 +47,7 @@
         "safety_decision": "insufficient_evidence_request_more_data",
         "disagreement_flag": true
       },
-      "latency_ms": 2885.878
+      "latency_ms": 1202.916
     },
     {
       "id": "mesh-005",
@@ -56,7 +56,7 @@
       "detail": {
         "safety_decision": "degraded_no_analyst_evidence: no telemetry-analyst agent registered"
       },
-      "latency_ms": 50.008
+      "latency_ms": 25.223
     },
     {
       "id": "mesh-006",
@@ -65,7 +65,7 @@
       "detail": {
         "safety_decision": "degraded_no_analyst_evidence: agent 'telemetry-analyst' unreachable at http://127.0.0.1:1: [WinError 10061] No connection could be made because the target machine actively refused it"
       },
-      "latency_ms": 3404.357
+      "latency_ms": 2624.879
     },
     {
       "id": "mesh-007",
@@ -74,7 +74,7 @@
       "detail": {
         "error": "agent 'telemetry-analyst' does not support task_type 'investigate_telemetry' (supports: [])"
       },
-      "latency_ms": 70.132
+      "latency_ms": 52.773
     },
     {
       "id": "mesh-008",
@@ -83,7 +83,7 @@
       "detail": {
         "safety_decision": "degraded_no_analyst_evidence: unknown device 'NOT-A-DEVICE'"
       },
-      "latency_ms": 2452.327
+      "latency_ms": 1240.886
     },
     {
       "id": "mesh-009",
@@ -93,7 +93,7 @@
         "id": "telemetry-analyst",
         "capabilities": 1
       },
-      "latency_ms": 1318.876
+      "latency_ms": 638.135
     },
     {
       "id": "mesh-010",
@@ -102,7 +102,7 @@
       "detail": {
         "message_count": 2
       },
-      "latency_ms": 2758.752
+      "latency_ms": 1313.911
     },
     {
       "id": "mesh-011",
@@ -111,7 +111,7 @@
       "detail": {
         "http_status": 502
       },
-      "latency_ms": 3334.423
+      "latency_ms": 2653.398
     }
   ],
   "limitations": "11 hand-authored scenarios over 2 real, separately-deployed agents; not the 40-scenario suite the program brief specifies for Mesh \u2014 see docs/ROADMAP.md. Conflict preservation is demonstrated within one analyst's two independent signals (rule-based + model-based), not across two independent agents \u2014 see docs/adr/0003-mesh-agent-protocol.md decision 5."

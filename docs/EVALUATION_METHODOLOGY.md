@@ -1,4 +1,4 @@
-# Evaluation Methodology — FieldForge Docs + Copilot + Mesh + Ops (Slice 1)
+# Evaluation Methodology — FieldForge Docs + Copilot + Mesh + Ops + Edge (Slice 1)
 
 Every metric below follows the same rule: **definition → computation → dataset version → baseline
 → current result → acceptance threshold → limitations**. Values not yet measured are written as
@@ -99,6 +99,43 @@ regression → rollback") runs as `tests/integration/test_ops_regression_demo.py
 seeded from the real committed Docs baseline, not a scripted GitHub Actions run —
 see ADR 0004 decision 4 for why.
 
+## Edge comparison methodology (slice 1)
+
+`scripts/run_edge_comparison_eval.py` measures the same `docs_qa_v1` dataset under
+two real configurations — sparse retrieval + deterministic extractive answers
+(slice-1 default) vs. hybrid retrieval + generative answers (Edge, real Ollama
+calls) — plus a small-vs-larger local model fallback-rate comparison (how often the
+citation guardrail rejects the model's output and falls back). All numbers come
+from an actual run on this development machine; there is no cloud/GPU/Jetson
+baseline to compare against, so this is a local-vs-local comparison, not
+local-vs-cloud. Requires Ollama; writes `TBD` for the Edge-specific sections if
+Ollama isn't reachable when it runs, per the program's no-invented-values rule.
+
+A real scoring bug was caught by this script's own first run: `citation_correctness`
+came out as `1.111` — mathematically impossible for a rate — because the
+denominator used the *expected* refusal count from the eval cases instead of the
+*actual* refusal count the run produced. Fixed before any number from this script
+was reported anywhere else in the repo.
+
+The corrected re-run's numbers (see
+[EDGE_OVERVIEW.md](architecture/EDGE_OVERVIEW.md#retrieval-quality-comparison-docs_qa_v1-eval-set-10-cases))
+surfaced a second, non-bug finding: `fallback_rate` was `1.0` for both local models
+tested (qwen2.5:0.5b and qwen3:1.7b) — every generative trial failed citation
+validation and fell back to the extractive adapter. That is the guardrail behaving
+correctly, not a defect in the eval script.
+
+A third finding came from the fresh-clone reproducibility check performed before
+committing: re-running the exact same script and models produced
+`fallback_rate: 0.4` for qwen2.5:0.5b instead of `1.0` (qwen3:1.7b stayed at `1.0`
+both times). Local generation is non-deterministic (no fixed seed, temperature
+> 0) and `n=5` trials is too small a sample to pin a rate down precisely — the
+number moves run to run. Both runs are reported in
+[EDGE_OVERVIEW.md](architecture/EDGE_OVERVIEW.md#local-model-comparison-5-trials-each)
+rather than picking the more favorable one; the honest takeaway is "fallback
+happens often, on the order of half-to-all trials," not a specific percentage.
+Increasing `n` and/or fixing a seed would tighten this but hasn't been done in
+slice 1.
+
 ## Reproducing results
 
 ```bash
@@ -109,6 +146,7 @@ python data/generators/generate_telemetry.py
 python scripts/run_eval.py                 # FieldForge Docs
 python scripts/run_copilot_eval.py          # FieldForge Copilot
 python scripts/run_mesh_eval.py             # FieldForge Mesh
+python scripts/run_edge_comparison_eval.py  # FieldForge Edge (needs Ollama)
 
 # FieldForge Ops — ingest the reports above and run the quality gate
 uvicorn fieldforge_ops_api.main:app --port 8030 &

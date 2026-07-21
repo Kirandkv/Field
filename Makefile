@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test eval check docker-build run run-copilot run-mesh-analyst run-mesh-commander run-ops
+.PHONY: install lint typecheck test eval check docker-build run run-copilot run-mesh-analyst run-mesh-commander run-ops run-edge edge-benchmark
 
 install:
 	pip install -e ".[dev]"
@@ -43,3 +43,10 @@ run-mesh-commander:
 
 run-ops:
 	uvicorn fieldforge_ops_api.main:app --reload --port 8030
+
+run-edge:
+	FIELDFORGE_RETRIEVAL_MODE=hybrid FIELDFORGE_ANSWER_MODE=generative \
+		uvicorn fieldforge_docs_api.main:app --reload --port 8000
+
+edge-benchmark:
+	python scripts/run_edge_comparison_eval.py

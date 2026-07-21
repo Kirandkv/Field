@@ -1,14 +1,16 @@
 # FieldForge AI Suite
 
-Four connected, production-shaped AI services for a fictional industrial operator —
+Five connected, production-shaped AI services for a fictional industrial operator —
 grounded document Q&A, a human-supervised incident-investigation agent, a two-agent
-A2A/MCP investigation mesh, and the LLMOps control plane that evaluates and gates all
-three — all running fully offline, all refusing or escalating rather than guessing
-when evidence is thin, and every number below is from an actual, reproducible run.
+A2A/MCP investigation mesh, the LLMOps control plane that evaluates and gates all
+three, and an offline/edge deployment profile with real local embeddings and
+generation — all running fully offline, all refusing or escalating rather than
+guessing when evidence is thin, and every number below is from an actual,
+reproducible run.
 
 > This repo currently implements **FieldForge Docs**, **FieldForge Copilot**,
-> **FieldForge Mesh**, and **FieldForge Ops** (each vertical slice 1). Edge is
-> designed (PRD-level) but not built — see [docs/ROADMAP.md](docs/ROADMAP.md).
+> **FieldForge Mesh**, **FieldForge Ops**, and **FieldForge Edge** (each vertical
+> slice 1). See [docs/ROADMAP.md](docs/ROADMAP.md) for what's planned next.
 
 ## Measured results
 
@@ -50,9 +52,31 @@ when evidence is thin, and every number below is from an actual, reproducible ru
 | Deployment blocked on failing/missing gate | 409 (correctly) | `test_ops_api.py::test_deployment_blocked_*` |
 | Full regression → fail → fix → pass → deploy → rollback sequence | All steps pass | `test_ops_regression_demo.py` |
 
-Re-run any of these yourself: `make check` runs all four. Metrics not listed
-(nDCG, faithfulness, tool-selection accuracy, cross-*agent* conflict resolution,
-drift detection, ...) are genuinely `TBD` — see
+**FieldForge Edge** — `evals/reports/edge_comparison_v1_report.json`, same
+`docs_qa_v1` dataset, real local Ollama on this development machine (CPU-only)
+
+| Config | recall@5 | MRR | refusal accuracy | citation correctness | latency p50 |
+|---|---|---|---|---|---|
+| sparse + extractive (slice-1 default) | 1.0 | 0.903 | 0.9 | 1.0 | 3.6ms |
+| hybrid + generative (Edge, real Ollama) | 1.0 | 0.889 | 0.9 | 1.0 | 12,958ms |
+
+| Local model | fallback rate (5 trials, two runs) | latency p50 |
+|---|---|---|
+| qwen2.5:0.5b | 1.0, then 0.4 on re-run | 5,710ms |
+| qwen3:1.7b | 1.0, both runs | 2,600ms |
+
+Both local models fell back to the deterministic extractive adapter on most or all
+trials — a real, disclosed finding (the citation guardrail rejected most/all
+generative output on this hardware), not a fabricated success number. The rate
+itself isn't stable run-to-run (non-deterministic local generation, n=5 is small)
+— see
+[EDGE_OVERVIEW.md](docs/architecture/EDGE_OVERVIEW.md#local-model-comparison-5-trials-each)
+for the full disclosure.
+
+Re-run any of these yourself: `make check` runs the first four; `make edge-benchmark`
+reproduces the Edge numbers (needs Ollama). Metrics not listed (nDCG, faithfulness,
+tool-selection accuracy, cross-*agent* conflict resolution, drift detection, ...)
+are genuinely `TBD` — see
 [docs/EVALUATION_METHODOLOGY.md](docs/EVALUATION_METHODOLOGY.md) for why, and what
 unlocks them.
 
@@ -75,6 +99,10 @@ flowchart LR
     subgraph Ops["FieldForge Ops (apps/ops_api)"]
         GATE[Quality gate] --> DEPLOY["Deployment registry\n(gate-enforced)"]
     end
+    subgraph Edge["FieldForge Edge (config profile of Docs, same process)"]
+        DQ -.->|FIELDFORGE_RETRIEVAL_MODE=hybrid| QDRANT[("Embedded Qdrant\n+ Ollama embeddings")]
+        DA -.->|FIELDFORGE_ANSWER_MODE=generative| OGEN["Ollama generation\n(citation-guardrailed,\nfalls back to DA)"]
+    end
     Docs -.->|fire-and-forget trace export| Ops
     Copilot -.-> Ops
     Mesh -.-> Ops
@@ -86,7 +114,8 @@ flowchart LR
 Docs: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md). Copilot:
 [docs/architecture/COPILOT_OVERVIEW.md](docs/architecture/COPILOT_OVERVIEW.md). Mesh:
 [docs/architecture/MESH_OVERVIEW.md](docs/architecture/MESH_OVERVIEW.md). Ops:
-[docs/architecture/OPS_OVERVIEW.md](docs/architecture/OPS_OVERVIEW.md).
+[docs/architecture/OPS_OVERVIEW.md](docs/architecture/OPS_OVERVIEW.md). Edge:
+[docs/architecture/EDGE_OVERVIEW.md](docs/architecture/EDGE_OVERVIEW.md).
 
 ## Quick start
 
@@ -144,8 +173,20 @@ python scripts/ingest_eval_reports.py --ops-url http://localhost:8030
 #    quality gate mesh/mesh_scenarios_v1: pass
 ```
 
+Edge demo — same Docs process, toggled into offline hybrid retrieval + local
+generative answers via env vars (needs Ollama with `nomic-embed-text` and a chat
+model pulled):
+
+```bash
+FIELDFORGE_RETRIEVAL_MODE=hybrid FIELDFORGE_ANSWER_MODE=generative \
+  uvicorn fieldforge_docs_api.main:app --port 8000
+curl http://localhost:8000/edge/resources        # psutil + Ollama /api/ps snapshot
+curl -X POST http://localhost:8000/edge/backup    # SQLite online-backup API
+```
+
 Or run everything (lint, typecheck, tests, all three products' eval suites) in one
-shot: `make check`.
+shot: `make check`. Edge's comparison benchmark is separate (`make edge-benchmark`)
+since it needs Ollama installed.
 
 ## Problem
 
@@ -201,16 +242,24 @@ products; direction-aware quality gate (rate metrics higher-is-better, latency
 lower-is-better); fire-and-forget trace export wired into all four products'
 middleware; gate-enforced deployment/rollback registry.
 
+**FieldForge Edge**: offline deployment profile of FieldForge Docs (env-var toggle,
+not a separate service) — real local dense embeddings and RRF hybrid retrieval via
+an embedded Qdrant index and Ollama, real local generative answers behind a
+citation-validation guardrail that falls back to the deterministic extractive
+adapter on any failure, resource monitoring (`GET /edge/resources`), and SQLite
+online-backup-API-based backup/restore (`POST /edge/backup`, `/edge/restore`).
+
 ## Not yet implemented (planned, tracked in [docs/ROADMAP.md](docs/ROADMAP.md))
 
-Docs: OCR, multimodal QA, Qdrant dense/hybrid retrieval, bilingual corpus, web UI,
-full RBAC, live LLM adapter. Copilot: 11 of 17 program-brief tools, the ≥50-scenario
-eval suite (currently 12), `PARTIAL`/`CANCELLED` states, retry/escalation. Mesh: 5 of
-7 agent roles, 4 of 5 MCP servers, true cross-*agent* disagreement, async task
-execution, the ~40-scenario eval suite (currently 11). Ops: prompt registry (no live
-LLM to version prompts for), real partial-canary traffic shifting,
-MLflow/OpenTelemetry integration, drift monitoring, any web UI. Suite-wide:
-FieldForge Edge.
+Docs: OCR, multimodal QA, bilingual corpus, web UI, full RBAC. Copilot: 11 of 17
+program-brief tools, the ≥50-scenario eval suite (currently 12),
+`PARTIAL`/`CANCELLED` states, retry/escalation. Mesh: 5 of 7 agent roles, 4 of 5 MCP
+servers, true cross-*agent* disagreement, async task execution, the ~40-scenario
+eval suite (currently 11). Ops: prompt registry (no live LLM to version prompts
+for), real partial-canary traffic shifting, MLflow/OpenTelemetry integration, drift
+monitoring, any web UI. Edge: encrypted local storage, local audit log, offline
+English-Arabic retrieval, GPU/Jetson hardware profiles (both `TBD` — not available
+in this environment), key rotation/authentication.
 
 ## Security
 
@@ -239,6 +288,18 @@ scenario eval cases: [evals/datasets/](evals/datasets/). Reporting: [SECURITY.md
 - **Ops' "deployment" and "canary" are a real, gate-enforced registry — not real
   infrastructure provisioning.** Nothing gets containerized or routed. See ADR 0004
   decision 3.
+- **Edge's local generative answers fell back to extractive on every measured
+  trial** (`fallback_rate: 1.0` for both qwen2.5:0.5b and qwen3:1.7b on this
+  CPU-only development machine) — the citation guardrail is working as designed,
+  but it means generative mode currently pays multi-second latency for the same
+  citation-correctness as extractive. See
+  [EDGE_OVERVIEW.md](docs/architecture/EDGE_OVERVIEW.md).
+- **Edge had two real bugs found and fixed during development**: an Ollama host
+  override that silently had no effect (module-level constant captured at first
+  import, before a test's env-var override could take effect) and an arbitrary
+  local file read via `/edge/restore` (no path-containment check on the requested
+  backup path). Both fixed, both covered by regression tests, both documented in
+  [ADR 0005](docs/adr/0005-edge-offline-profile.md) and the threat model.
 - Small corpora/fleets (7 documents, 3 devices) — metrics are meaningful for this
   project's own regression testing, not representative of production scale.
 

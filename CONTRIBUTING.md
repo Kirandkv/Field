@@ -33,6 +33,14 @@ gates slice 1 enforces directly. FieldForge Ops' own gate logic is covered by
 rather than a standalone script, since Ops evaluates the *other* three products'
 reports rather than running its own domain eval.
 
+FieldForge Edge's tests (`tests/unit/test_ollama_adapters.py`,
+`tests/integration/test_docs_api_edge_mode.py`) are included in `pytest -q` above and
+run everywhere — the ones that need a real local model call skip (not fail) when
+Ollama isn't reachable, so CI stays green without Ollama installed. If you have Ollama
+running locally with `nomic-embed-text` and a chat model pulled, those tests run for
+real; `python scripts/run_edge_comparison_eval.py` reproduces the measured comparison
+numbers in `evals/reports/edge_comparison_v1_report.json`.
+
 ## Conventions
 
 - No file over 500 lines; split by responsibility instead.

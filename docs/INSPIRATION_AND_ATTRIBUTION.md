@@ -45,11 +45,15 @@ supplied and reviewed.
 
 ## Third-party licenses in use
 
-Tracked exactly in the lock file / `pyproject.toml`. As of the Docs + Copilot + Mesh slice 1s:
-`fastapi`, `pydantic`, `rank-bm25`, `pypdf`, `uvicorn`, `httpx`, `scikit-learn`, `numpy`, `mcp`,
-`pytest` — all permissively licensed (MIT/BSD/Apache-2.0). No copyleft dependency is used.
-Re-verify with a license-checker in CI (see `.github/workflows/pr.yml`) rather than trusting this
-static note as time passes.
+Tracked exactly in the lock file / `pyproject.toml`. As of the Docs + Copilot + Mesh + Ops + Edge
+slice 1s: `fastapi`, `pydantic`, `rank-bm25`, `pypdf`, `uvicorn`, `httpx`, `scikit-learn`, `numpy`,
+`mcp`, `qdrant-client`, `psutil`, `pytest` — all permissively licensed (MIT/BSD/Apache-2.0). No
+copyleft dependency is used. Re-verify with a license-checker in CI (see
+`.github/workflows/pr.yml`) rather than trusting this static note as time passes.
+
+FieldForge Edge additionally depends on [Ollama](https://ollama.com) (MIT) running as a local
+daemon — not a Python dependency, an external program the operator installs separately, called
+only over HTTP (`localhost:11434`). No Ollama source code is vendored or reproduced here.
 
 `mcp` (Anthropic's official Model Context Protocol Python SDK, MIT) backs `services/mcp_telemetry`
 — see [ADR 0003](adr/0003-mesh-agent-protocol.md) decision 3 for why the real SDK is used there

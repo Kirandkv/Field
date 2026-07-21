@@ -25,6 +25,9 @@ jobs:
         run: mypy packages services apps scripts evals
 
       - name: Pytest
+        # FieldForge Edge's Ollama-backed tests (tests/unit/test_ollama_adapters.py,
+        # tests/integration/test_docs_api_edge_mode.py) skip — not fail — here since
+        # this runner has no Ollama installed. See docs/adr/0005-edge-offline-profile.md.
         run: pytest -q
 
       - name: Generate synthetic corpora

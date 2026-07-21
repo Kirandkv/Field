@@ -59,6 +59,31 @@ class DocumentStore:
     def close(self) -> None:
         self._conn.close()
 
+    def backup_to(self, backup_path: str) -> None:
+        """Uses SQLite's online backup API — safe to call while this store's
+        connection is open, unlike a raw file copy. See ADR 0005 decision (Edge).
+        """
+        Path(backup_path).parent.mkdir(parents=True, exist_ok=True)
+        dest = sqlite3.connect(backup_path)
+        try:
+            self._conn.backup(dest)
+        finally:
+            dest.close()
+
+    def restore_from(self, backup_path: str) -> None:
+        """Closes the current connection, restores from a backup file made by
+        `backup_to`, and reopens against the original db path.
+        """
+        if not Path(backup_path).exists():
+            raise FileNotFoundError(f"backup file not found: {backup_path}")
+        self._conn.close()
+        source = sqlite3.connect(backup_path)
+        self._conn = sqlite3.connect(self._path, check_same_thread=False)
+        try:
+            source.backup(self._conn)
+        finally:
+            source.close()
+
     def save_document(self, doc: Document) -> None:
         self._conn.execute(
             "INSERT OR REPLACE INTO documents "

@@ -81,6 +81,9 @@ in `packages/contracts/fieldforge_contracts/copilot_models.py`. See those module
 - The guardrail PII/secret regex layer (see [threat model](docs/threat-model/THREAT_MODEL.md))
   is tested against this corpus specifically to confirm it does *not* false-negative on the
   intentionally-planted adversarial fixtures in the guardrail eval set.
+- FieldForge Edge mode (hybrid retrieval / generative answers) sends document and query
+  text to a locally-running Ollama process only — `localhost:11434`, no external network
+  call. Nothing in this corpus ever leaves the machine it's running on, in either mode.
 
 ## License
 

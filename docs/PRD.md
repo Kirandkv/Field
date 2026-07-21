@@ -90,7 +90,7 @@ get a grounded, cited answer — running end-to-end locally with one command, wi
 | M3 | Copilot vertical slice (single agent, human approval, one flagship scenario) | Done | M1 |
 | M4 | Mesh vertical slice (2+ agents, one MCP server, one A2A task) | Done | M3 |
 | M5 | Ops vertical slice (trace explorer + one quality gate demo) | Done | M3 |
-| M6 | Edge profile | Planned | M2 |
+| M6 | Edge profile | Done | M1 |
 
 See [ROADMAP.md](ROADMAP.md) for the issue-level backlog.
 
@@ -179,4 +179,35 @@ integration test seeded from the actual committed Docs baseline. See
 Prompt registry/versioning (no live LLM adapter exists yet to version prompts for),
 real partial-canary traffic shifting, MLflow/OpenTelemetry integration, drift
 monitoring, and any UI (trace explorer, evaluation comparison) — see
+[docs/ROADMAP.md](ROADMAP.md).
+
+## 10. Milestone M6: FieldForge Edge — vertical slice 1
+
+**Goal:** an offline deployment profile for Docs — real local dense embeddings and
+generative answers via Ollama, a real local vector store via embedded Qdrant — with
+zero cloud dependency and zero regression to the existing slice-1 default path.
+
+### User story
+> As an operator running FieldForge Docs on a laptop with no internet connectivity,
+> I opt into hybrid retrieval and generative answers backed entirely by models
+> already running on my machine, and the system still refuses to show me an
+> unverified answer — a small local model hallucinating a citation gets caught and
+> replaced with the safe extractive fallback, not surfaced to me.
+
+### In scope for slice 1
+`OllamaEmbeddingAdapter` and `QdrantDenseIndex` (embedded, no server) implementing
+the interfaces [ADR 0001](adr/0001-monorepo-vertical-slice.md) deferred to "M2";
+`OllamaGenerativeAdapter` with a citation-validation guardrail that verifies every
+claim against real retrieved evidence before trusting it, falling back to the
+existing deterministic extractive adapter otherwise; config-driven mode selection
+in `apps/docs_api` (`FIELDFORGE_RETRIEVAL_MODE`, `FIELDFORGE_ANSWER_MODE`, both
+defaulting to the unmodified slice-1 path); resource monitoring; backup/restore.
+Measured on this development machine (CPU-only — no GPU/Jetson available): see
+[docs/architecture/EDGE_OVERVIEW.md](architecture/EDGE_OVERVIEW.md) and
+[ADR 0005](adr/0005-edge-offline-profile.md).
+
+### Explicitly out of scope for slice 1
+Encrypted local storage, local audit log, GPU/Jetson hardware-profile
+benchmarking (not available in this environment), offline English-Arabic
+retrieval, network-disconnection/cloud-sync-conflict simulation — see
 [docs/ROADMAP.md](ROADMAP.md).

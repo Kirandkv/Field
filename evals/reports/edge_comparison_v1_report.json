@@ -1,0 +1,34 @@
+{
+  "dataset_id": "docs_qa_v1",
+  "case_count": 20,
+  "sparse_extractive": {
+    "config": "sparse_extractive",
+    "recall_at_5": 1.0,
+    "mrr": 0.903,
+    "refusal_accuracy": 0.9,
+    "citation_correctness": 1.0,
+    "latency_ms_p50": 3.637
+  },
+  "hybrid_generative": {
+    "config": "hybrid_generative",
+    "recall_at_5": 1.0,
+    "mrr": 0.889,
+    "refusal_accuracy": 0.9,
+    "citation_correctness": 1.0,
+    "latency_ms_p50": 12958.182
+  },
+  "model_size_comparison": [
+    {
+      "model": "qwen2.5:0.5b",
+      "trials": 5,
+      "fallback_rate": 1.0,
+      "latency_ms_p50": 5709.814
+    },
+    {
+      "model": "qwen3:1.7b",
+      "trials": 5,
+      "fallback_rate": 1.0,
+      "latency_ms_p50": 2599.995
+    }
+  ]
+}
