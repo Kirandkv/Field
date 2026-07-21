@@ -89,7 +89,7 @@ get a grounded, cited answer — running end-to-end locally with one command, wi
 | M2 | Docs: OCR + multimodal + Qdrant hybrid retrieval + web UI | Planned | M1 |
 | M3 | Copilot vertical slice (single agent, human approval, one flagship scenario) | Done | M1 |
 | M4 | Mesh vertical slice (2+ agents, one MCP server, one A2A task) | Done | M3 |
-| M5 | Ops vertical slice (trace explorer + one quality gate demo) | Planned | M3 |
+| M5 | Ops vertical slice (trace explorer + one quality gate demo) | Done | M3 |
 | M6 | Edge profile | Planned | M2 |
 
 See [ROADMAP.md](ROADMAP.md) for the issue-level backlog.
@@ -148,4 +148,35 @@ and [ADR 0003](adr/0003-mesh-agent-protocol.md).
 5 of the program brief's 7 agent roles, 4 of its 5 MCP servers, true cross-agent
 (rather than cross-signal) disagreement, async task execution, OAuth/mTLS
 agent-to-agent auth, and the ~40-scenario eval suite (currently 11) — see
+[docs/ROADMAP.md](ROADMAP.md).
+
+## 9. Milestone M5: FieldForge Ops — vertical slice 1
+
+**Goal:** ingest the real evaluation reports Docs/Copilot/Mesh already produce,
+enforce a quality gate against their committed baselines, collect trace spans from
+all four products, and gate-enforce a deployment/rollback registry — proving the
+"evaluate, trace, deploy, monitor" control-plane concept with real data rather than
+a fabricated dashboard.
+
+### User story
+> As the maintainer, I run a product's eval suite, ingest the result into Ops, and
+> get a pass/fail decision against the committed baseline. If it fails, I can see
+> exactly which metric regressed and by how much, and deployment is blocked until
+> it passes — enforced by the API, not by me remembering to check.
+
+### In scope for slice 1
+Evaluation registry ingesting real `evals/reports`/`evals/baselines` JSON;
+direction-aware quality gate (rate metrics higher-is-better, latency
+lower-is-better — the second branch exists because of a real bug found while
+building this slice, see [ADR 0004](adr/0004-ops-quality-gate.md)); fire-and-forget
+trace export wired into all four other products' request middleware; a
+gate-enforced deployment/rollback registry. The brief's "prompt regression → gate
+fails → fix → gate passes → deploy → rollback" demonstration runs as a real
+integration test seeded from the actual committed Docs baseline. See
+[docs/architecture/OPS_OVERVIEW.md](architecture/OPS_OVERVIEW.md).
+
+### Explicitly out of scope for slice 1
+Prompt registry/versioning (no live LLM adapter exists yet to version prompts for),
+real partial-canary traffic shifting, MLflow/OpenTelemetry integration, drift
+monitoring, and any UI (trace explorer, evaluation comparison) — see
 [docs/ROADMAP.md](ROADMAP.md).

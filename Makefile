@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test eval check docker-build run run-copilot run-mesh-analyst run-mesh-commander
+.PHONY: install lint typecheck test eval check docker-build run run-copilot run-mesh-analyst run-mesh-commander run-ops
 
 install:
 	pip install -e ".[dev]"
@@ -27,6 +27,7 @@ docker-build:
 	docker build -f infra/docker/copilot_api.Dockerfile -t fieldforge-copilot-api:local .
 	docker build -f infra/docker/mesh_telemetry_agent.Dockerfile -t fieldforge-mesh-telemetry-agent:local .
 	docker build -f infra/docker/mesh_commander.Dockerfile -t fieldforge-mesh-commander:local .
+	docker build -f infra/docker/ops_api.Dockerfile -t fieldforge-ops-api:local .
 
 run:
 	uvicorn fieldforge_docs_api.main:app --reload --port 8000
@@ -39,3 +40,6 @@ run-mesh-analyst:
 
 run-mesh-commander:
 	uvicorn fieldforge_mesh_commander.main:app --reload --port 8022
+
+run-ops:
+	uvicorn fieldforge_ops_api.main:app --reload --port 8030

@@ -3,12 +3,12 @@ from __future__ import annotations
 import logging
 import time
 
-from fieldforge_observability import export_span, new_trace_id
+from fieldforge_observability import new_trace_id
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-logger = logging.getLogger("fieldforge.mesh_telemetry_agent.request")
+logger = logging.getLogger("fieldforge.ops_api.request")
 
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
@@ -36,14 +36,5 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
                     "duration_ms": round(duration_ms, 2),
                 }
             },
-        )
-        export_span(
-            service="mesh_telemetry_agent",
-            trace_id=trace_id,
-            method=request.method,
-            path=request.url.path,
-            status_code=response.status_code,
-            duration_ms=round(duration_ms, 2),
-            message="request completed",
         )
         return response

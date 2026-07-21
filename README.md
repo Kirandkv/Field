@@ -1,14 +1,14 @@
 # FieldForge AI Suite
 
-Three connected, production-shaped AI services for a fictional industrial operator —
-grounded document Q&A, a human-supervised incident-investigation agent, and a
-two-agent A2A/MCP investigation mesh — all running fully offline, all refusing or
-escalating rather than guessing when evidence is thin, and every number below is
-from an actual, reproducible run.
+Four connected, production-shaped AI services for a fictional industrial operator —
+grounded document Q&A, a human-supervised incident-investigation agent, a two-agent
+A2A/MCP investigation mesh, and the LLMOps control plane that evaluates and gates all
+three — all running fully offline, all refusing or escalating rather than guessing
+when evidence is thin, and every number below is from an actual, reproducible run.
 
-> This repo currently implements **FieldForge Docs**, **FieldForge Copilot**, and
-> **FieldForge Mesh** (each vertical slice 1). Ops and Edge are designed (PRD-level)
-> but not built — see [docs/ROADMAP.md](docs/ROADMAP.md).
+> This repo currently implements **FieldForge Docs**, **FieldForge Copilot**,
+> **FieldForge Mesh**, and **FieldForge Ops** (each vertical slice 1). Edge is
+> designed (PRD-level) but not built — see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Measured results
 
@@ -41,9 +41,18 @@ from an actual, reproducible run.
 | Graceful-degradation rate | 1.0 | same (no agent, unreachable agent, unsupported task, unknown device) |
 | Agent-discovery success rate | 1.0 | same (valid + deliberately-invalid discovery) |
 
-Re-run any of these yourself: `make check` runs all three. Metrics not listed
-(nDCG, faithfulness, tool-selection accuracy, cross-*agent* conflict resolution, ...)
-are genuinely `TBD` — see
+**FieldForge Ops** — `tests/integration/`, real ingestion of the reports above, 29 tests
+
+| Check | Result | Where |
+|---|---|---|
+| Quality gate: identical run passes | Pass | `test_ops_api.py::test_quality_gate_pass` |
+| Quality gate: real regression fails | Fail (correctly) | `test_ops_api.py::test_quality_gate_fail_on_real_regression` |
+| Deployment blocked on failing/missing gate | 409 (correctly) | `test_ops_api.py::test_deployment_blocked_*` |
+| Full regression → fail → fix → pass → deploy → rollback sequence | All steps pass | `test_ops_regression_demo.py` |
+
+Re-run any of these yourself: `make check` runs all four. Metrics not listed
+(nDCG, faithfulness, tool-selection accuracy, cross-*agent* conflict resolution,
+drift detection, ...) are genuinely `TBD` — see
 [docs/EVALUATION_METHODOLOGY.md](docs/EVALUATION_METHODOLOGY.md) for why, and what
 unlocks them.
 
@@ -56,21 +65,28 @@ flowchart LR
     end
     subgraph Copilot["FieldForge Copilot (apps/copilot_api)"]
         CA[/alerts/] --> CO[orchestrator: state machine]
-        CO --> CT[telemetry + Isolation Forest]
         CO -->|HTTP /query| DQ
-        CO --> CP[ProposedAction] --> CH{Safety Manager approval}
-        CH -->|approve| CTK[MaintenanceTicket]
+        CO --> CH{Safety Manager approval}
     end
     subgraph Mesh["FieldForge Mesh (2 separate services)"]
         CMD[Incident Commander] -->|A2A: POST /tasks| TA[Telemetry Analyst]
         TA --> MCP[telemetry-mcp: real MCP server]
-        CMD --> MR[MeshIncidentReport\nalways requires human approval]
     end
+    subgraph Ops["FieldForge Ops (apps/ops_api)"]
+        GATE[Quality gate] --> DEPLOY["Deployment registry\n(gate-enforced)"]
+    end
+    Docs -.->|fire-and-forget trace export| Ops
+    Copilot -.-> Ops
+    Mesh -.-> Ops
+    Docs -.->|real eval reports| GATE
+    Copilot -.-> GATE
+    Mesh -.-> GATE
 ```
 
 Docs: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md). Copilot:
 [docs/architecture/COPILOT_OVERVIEW.md](docs/architecture/COPILOT_OVERVIEW.md). Mesh:
-[docs/architecture/MESH_OVERVIEW.md](docs/architecture/MESH_OVERVIEW.md).
+[docs/architecture/MESH_OVERVIEW.md](docs/architecture/MESH_OVERVIEW.md). Ops:
+[docs/architecture/OPS_OVERVIEW.md](docs/architecture/OPS_OVERVIEW.md).
 
 ## Quick start
 
@@ -88,6 +104,8 @@ uvicorn fieldforge_copilot_api.main:app --port 8010
 uvicorn fieldforge_mesh_telemetry_agent.main:app --port 8021
 # Terminal 4 — Mesh: Incident Commander
 uvicorn fieldforge_mesh_commander.main:app --port 8022
+# Terminal 5 — Ops
+uvicorn fieldforge_ops_api.main:app --port 8030
 ```
 
 Copilot demo — an FF-R07 methane alert investigated end-to-end, cross-checked
@@ -115,33 +133,50 @@ curl -X POST http://localhost:8022/incidents -H "Content-Type: application/json"
 #     "requires_human_approval": true, "analyst_finding": {...}, "delegation_log": [...]}
 ```
 
-Or run everything (lint, typecheck, tests, all three eval suites) in one shot: `make check`.
+Ops demo — ingest the real eval reports from the other three products and run the
+quality gate against their committed baselines:
+
+```bash
+python scripts/run_eval.py && python scripts/run_copilot_eval.py && python scripts/run_mesh_eval.py
+python scripts/ingest_eval_reports.py --ops-url http://localhost:8030
+# -> quality gate docs/docs_qa_v1: pass
+#    quality gate copilot/copilot_scenarios_v1: pass
+#    quality gate mesh/mesh_scenarios_v1: pass
+```
+
+Or run everything (lint, typecheck, tests, all three products' eval suites) in one
+shot: `make check`.
 
 ## Problem
 
 Industrial field teams need fast, trustworthy answers from manuals and SOPs, fast
-triage of sensor alerts, and coordinated investigation across specialized agents —
-and a wrong or fabricated answer in any of these ("this reading is fine, resume the
-robot") is a safety issue, not an inconvenience. Every product in this suite is built
-around that constraint: Docs answers are extractive and cited; Copilot never takes a
-state-changing action without a logged human approval; Mesh's Incident Commander has
-*no execution capability at all* — it can only investigate and escalate.
+triage of sensor alerts, coordinated investigation across specialized agents, and a
+way to know *before* deploying a change whether it made any of that worse — and a
+wrong or fabricated answer in any of these ("this reading is fine, resume the
+robot") is a safety issue, not an inconvenience. Every product in this suite is
+built around that constraint: Docs answers are extractive and cited; Copilot never
+takes a state-changing action without a logged human approval; Mesh's Incident
+Commander has *no execution capability at all*; Ops physically blocks deploying a
+regressed evaluation run.
 
-## Why this is different from a demo RAG app / demo agent / demo multi-agent system
+## Why this is different from a demo RAG app / demo agent / demo LLMOps dashboard
 
 - **No API key required to run any service.** Docs is BM25 + a deterministic
   extractive adapter. Copilot and Mesh's only "model" is a real scikit-learn
   `IsolationForest` fit on synthetic telemetry — no LLM call anywhere in the default path.
 - **The services actually talk to each other, over real processes.** Copilot's
   `retrieve_sop` and Mesh's Incident Commander both make genuine HTTP calls to peer
-  services, not shared in-process imports. Kill any dependency and the caller
-  degrades — tested, not asserted (`tests/unit/test_orchestrator.py`,
-  `tests/integration/test_mesh_commander_api.py`).
+  services; Ops collects real trace spans and real evaluation reports from all three.
+  Kill any dependency and the caller degrades — tested, not asserted.
 - **`telemetry-mcp` is a real MCP server** built on Anthropic's official SDK — connect
   any MCP client to it, not just this suite's own agents.
 - **Human approval is enforced server-side**, not in a UI. Copilot checks
   `X-FieldForge-Role: safety_manager` in the API layer; Mesh's Safety Officer sets
-  `requires_human_approval=true` on every single code path, with no exception.
+  `requires_human_approval=true` on every single code path.
+- **Ops' quality gate actually blocks deployment** — `POST /deployments` 409s if the
+  linked evaluation run hasn't passed a gate. It found a real bug in its own logic
+  (a faster, better latency was flagged as a regression) by being run against real
+  data, not by a unit test written in advance — see [known limitations](#known-limitations).
 - **Every metric above is measured by the same script CI runs.** No separate "demo
   numbers" path.
 
@@ -161,17 +196,25 @@ lifecycle with shared-secret auth; a real `telemetry-mcp` MCP server sharing its
 implementations with the A2A path; disagreement-preserving incident reports; Safety
 Officer policy that always requires human approval.
 
+**FieldForge Ops**: evaluation registry ingesting real reports from the other three
+products; direction-aware quality gate (rate metrics higher-is-better, latency
+lower-is-better); fire-and-forget trace export wired into all four products'
+middleware; gate-enforced deployment/rollback registry.
+
 ## Not yet implemented (planned, tracked in [docs/ROADMAP.md](docs/ROADMAP.md))
 
 Docs: OCR, multimodal QA, Qdrant dense/hybrid retrieval, bilingual corpus, web UI,
 full RBAC, live LLM adapter. Copilot: 11 of 17 program-brief tools, the ≥50-scenario
 eval suite (currently 12), `PARTIAL`/`CANCELLED` states, retry/escalation. Mesh: 5 of
 7 agent roles, 4 of 5 MCP servers, true cross-*agent* disagreement, async task
-execution, the ~40-scenario eval suite (currently 11). Suite-wide: FieldForge Ops, Edge.
+execution, the ~40-scenario eval suite (currently 11). Ops: prompt registry (no live
+LLM to version prompts for), real partial-canary traffic shifting,
+MLflow/OpenTelemetry integration, drift monitoring, any web UI. Suite-wide:
+FieldForge Edge.
 
 ## Security
 
-Threat model (STRIDE-flavored, all three products, implemented vs. planned):
+Threat model (STRIDE-flavored, all four products, implemented vs. planned):
 [docs/threat-model/THREAT_MODEL.md](docs/threat-model/THREAT_MODEL.md). Adversarial/
 scenario eval cases: [evals/datasets/](evals/datasets/). Reporting: [SECURITY.md](SECURITY.md).
 
@@ -183,14 +226,19 @@ scenario eval cases: [evals/datasets/](evals/datasets/). Reporting: [SECURITY.md
   `services/retrieval/fieldforge_retrieval/sparse.py`, not hidden behind a threshold hack.
 - **Copilot's eval set is 12 scenarios, Mesh's is 11** — not the program brief's ~50
   and ~40. Every one is a real end-to-end assertion; scaling up is tracked, not faked.
-- **Mesh's "disagreement preservation" is between two signals from one analyst**
-  (rule-based corroboration vs. model-based anomaly detection), not between two
-  independent agents — a true cross-agent disagreement needs a second opinionated
-  agent, which doesn't exist yet. Disclosed in
-  [ADR 0003](docs/adr/0003-mesh-agent-protocol.md) decision 5.
-- **Mesh's A2A protocol is hand-rolled**, following the public A2A vocabulary but not
-  built on the `a2a-sdk` package — see ADR 0003 decision 2 for why, and what
-  reconciling against the official spec would take.
+- **Mesh's "disagreement preservation" is between two signals from one analyst**, not
+  between two independent agents — see [ADR 0003](docs/adr/0003-mesh-agent-protocol.md)
+  decision 5. Mesh's A2A protocol is also hand-rolled, not built on the `a2a-sdk`
+  package — see ADR 0003 decision 2.
+- **Ops' quality gate had a real, now-fixed bug**: the first version applied
+  "higher is better" to latency metrics, so a *faster* Docs run failed the gate.
+  Fixed and covered by a regression test — see
+  [ADR 0004](docs/adr/0004-ops-quality-gate.md) decision 1. Left in this list
+  deliberately, as a disclosed example of the kind of bug real testing (not just
+  unit tests written in advance) catches.
+- **Ops' "deployment" and "canary" are a real, gate-enforced registry — not real
+  infrastructure provisioning.** Nothing gets containerized or routed. See ADR 0004
+  decision 3.
 - Small corpora/fleets (7 documents, 3 devices) — metrics are meaningful for this
   project's own regression testing, not representative of production scale.
 

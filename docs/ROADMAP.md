@@ -86,10 +86,30 @@ All six shipped; see [evals/reports](../evals/reports) for the measured baseline
 - Scoped per-capability agent tokens (today's shared secret is all-or-nothing)
 - Reconcile the hand-rolled A2A shape against the official `a2a-sdk`/spec — ADR 0003 decision 2
 
-## P1 — Ops vertical slice (planned, not started)
+## P0 — FieldForge Ops slice 1 (done)
 
-- Trace explorer over Docs' correlation IDs (first real trace source)
-- One quality gate demo (regression → PR gate fails → fix → gate passes) per program brief §Profile D
+| ID | Title | Files | Acceptance criteria | Complexity | Depends on |
+|---|---|---|---|---|---|
+| OPS-001 | Ops contracts | `packages/contracts/ops_models.py` | EvaluationRun/QualityGateResult/MetricComparison/TraceSpan/Release/RollbackEvent | S | — |
+| OPS-002 | Trace export | `packages/observability/tracing.py` | Fire-and-forget `export_span()`; wired into docs_api/copilot_api/mesh_telemetry_agent/mesh_commander middleware; never blocks or raises when Ops is down | S | OPS-001 |
+| OPS-003 | Evaluation registry + quality gate | `apps/ops_api/gate.py`, `store.py` | Pure, unit-tested comparison logic; direction-aware (rate metrics higher-is-better, latency lower-is-better) | M | OPS-001 |
+| OPS-004 | FastAPI app | `apps/ops_api/main.py` | `/evaluations`, `/quality-gate/run`, `/traces`, `/deployments` (gate-enforced), `/deployments/{id}/rollback` | M | OPS-003 |
+| OPS-005 | Real ingestion + regression demo | `scripts/ingest_eval_reports.py`, `tests/integration/test_ops_regression_demo.py` | Ingests the real committed reports from all 3 products; the brief's "primary portfolio feature" CI/CD sequence runs as a real test seeded from the real Docs baseline | M | OPS-004 |
+| OPS-006 | Tests | `tests/unit/test_gate.py`, `test_tracing.py`, `tests/integration/test_ops_api.py` | 29 new tests; includes a regression test for a real bug found during slice-1 testing (latency direction) | M | OPS-005 |
+
+All six shipped. A real bug was found and fixed while building this slice: the
+quality gate's first version applied "higher is better" to latency metrics too, so
+a faster (better) run was reported as a failing regression — see
+[ADR 0004](adr/0004-ops-quality-gate.md) decision 1.
+
+## P1 — Ops milestone 2 (planned, not started)
+
+- Prompt registry/versioning — no live LLM adapter exists yet to version prompts for
+- Real partial-canary traffic shifting (`Release.canary_percent` is a field today, unused)
+- MLflow / OpenTelemetry integration (today's trace export is a minimal bespoke span record)
+- Drift monitoring (needs production traffic volume this slice doesn't have)
+- Trace-explorer / evaluation-comparison web UI
+- Signed evaluation reports (today's ingestion trusts the caller's JSON body)
 
 ## P2 — Polish (planned)
 

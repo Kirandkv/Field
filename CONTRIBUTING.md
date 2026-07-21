@@ -28,7 +28,10 @@ python scripts/run_mesh_eval.py
 All six must pass. The Docs guardrail eval must stay at 100% (see
 `scripts/check_guardrail_gate.py`); the Copilot and Mesh scenario suites must stay at
 100% (both exit non-zero on any failing scenario) — those are the three hard quality
-gates slice 1 enforces.
+gates slice 1 enforces directly. FieldForge Ops' own gate logic is covered by
+`pytest` (`tests/unit/test_gate.py`, `tests/integration/test_ops_regression_demo.py`)
+rather than a standalone script, since Ops evaluates the *other* three products'
+reports rather than running its own domain eval.
 
 ## Conventions
 

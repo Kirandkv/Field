@@ -1,6 +1,6 @@
-# Threat Model — FieldForge Docs + Copilot + Mesh (Slice 1)
+# Threat Model — FieldForge Docs + Copilot + Mesh + Ops (Slice 1)
 
-Scope: this document covers what is **implemented** across FieldForge Docs, Copilot, and Mesh
+Scope: this document covers what is **implemented** across FieldForge Docs, Copilot, Mesh, and Ops
 slice 1. Threats relevant to Mesh's not-yet-built roles (Document Intelligence, Vision Inspection,
 Maintenance Planner, Report Agent) are listed for suite-level completeness but marked **N/A (not
 built)** — listing them now avoids retrofitting security review later.
@@ -28,6 +28,9 @@ Methodology: STRIDE-flavored, enumerated against the suite's required threat lis
 | 17 | Idempotency / replayed approval decision | Implemented | An `ApprovalRequest` can be decided exactly once (`decided` flag checked server-side); a second decision attempt on the same id returns 409, tested in `tests/integration/test_copilot_api.py::test_deciding_an_already_decided_approval_is_rejected` | Idempotency keys on `/alerts` submission itself (duplicate alert detection) — planned M2 |
 | 18 | Malformed or malicious agent card during discovery (`POST /agents/discover` fetching an attacker-controlled `/.well-known/agent-card`) | Implemented | Response is schema-validated against `AgentCard` before registration; a malformed body returns 502 rather than being stored; the discovered card's `endpoint` field is overridden with the address actually dialed, not trusted from the card's own self-report (found via a real test failure — see `main.py`'s comment on `/agents/discover`) | Signed agent cards / allowlisted discovery sources — M2 |
 | 19 | A2A message/task schema validation | Implemented | Task creation validates `task_type` against a fixed allowlist and required `input` fields before any work starts (`fieldforge_mesh_telemetry_agent/main.py::create_task`); Commander validates the task returned by a peer against the `A2ATask` Pydantic model before trusting it (`delegation.py`) | Full JSON Schema validation of arbitrary future task types — M2 |
+| 20 | Observability becoming a new availability dependency (Ops going down/slow breaking the product it observes) | Implemented | `export_span()` is fire-and-forget (`asyncio.create_task`, not awaited) with a 2s timeout and every exception swallowed; tested with an intentionally unreachable Ops URL — `tests/unit/test_tracing.py::test_export_span_sync_fallback_swallows_unreachable_errors` | — |
+| 21 | Sensitive data leakage via trace export | Implemented | `TraceSpan` only ever carries method/path/status/duration/service/trace_id — request/response bodies, headers, and query parameters are never included, so there is nothing to redact because it's never captured | Structured redaction policy once real request metadata is exported (M2) |
+| 22 | Quality-gate bypass (deploying a regressed evaluation run) | Implemented | `POST /deployments` requires the linked `EvaluationRun`'s most recent `QualityGateResult` to be `decision == pass`; missing or failed gate returns 409, tested in `tests/integration/test_ops_api.py::test_deployment_blocked_without_passing_gate`/`::test_deployment_blocked_after_failing_gate` and the full sequence in `tests/integration/test_ops_regression_demo.py` | Signed evaluation reports (today's ingestion trusts the caller's JSON body) — M2 |
 
 ## Out of scope for slice 1 (tracked, not silently dropped)
 
@@ -47,4 +50,8 @@ Docs adversarial fixtures for rows 1, 2, 8, 9, 14 live in
 (`unauthorized_action_prevention_rate`, `recovery_after_failure_rate`). Mesh's rows 6, 12, 18, 19
 are covered by [evals/datasets/mesh_scenarios_v1.jsonl](../../evals/datasets/mesh_scenarios_v1.jsonl)
 (`graceful_degradation_rate`, `agent_discovery_success_rate`) plus the integration tests cited
-inline above. Results for all three: [evals/reports](../../evals/reports).
+inline above. Ops' rows 20, 21, 22 are covered by `tests/unit/test_tracing.py` and
+`tests/integration/test_ops_api.py`/`test_ops_regression_demo.py` — Ops doesn't have its own
+adversarial JSONL dataset in slice 1 since its attack surface (gate bypass, export
+availability) is small enough to cover directly in integration tests. Results for all:
+[evals/reports](../../evals/reports).

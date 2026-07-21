@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fieldforge"
 version = "0.1.0"
-description = "FieldForge AI Suite — monorepo package root (Docs + Copilot + Mesh slice 1)"
+description = "FieldForge AI Suite — monorepo package root (Docs + Copilot + Mesh + Ops slice 1)"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 dependencies = [
@@ -45,6 +45,7 @@ where = [
     "apps/copilot_api",
     "apps/mesh_telemetry_agent",
     "apps/mesh_commander",
+    "apps/ops_api",
     "evals",
 ]
 

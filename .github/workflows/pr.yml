@@ -44,6 +44,12 @@ jobs:
       - name: Run FieldForge Mesh evaluation suite
         run: python scripts/run_mesh_eval.py
 
+      - name: Ingest eval reports into FieldForge Ops and run the quality gate
+        run: |
+          uvicorn fieldforge_ops_api.main:app --port 8030 &
+          for i in $(seq 1 20); do curl -sf http://localhost:8030/health && break; sleep 0.5; done
+          python scripts/ingest_eval_reports.py --ops-url http://localhost:8030
+
       - name: Docker build — Docs API
         run: docker build -f infra/docker/docs_api.Dockerfile -t fieldforge-docs-api:pr .
 
@@ -55,3 +61,6 @@ jobs:
 
       - name: Docker build — Mesh Incident Commander
         run: docker build -f infra/docker/mesh_commander.Dockerfile -t fieldforge-mesh-commander:pr .
+
+      - name: Docker build — Ops API
+        run: docker build -f infra/docker/ops_api.Dockerfile -t fieldforge-ops-api:pr .

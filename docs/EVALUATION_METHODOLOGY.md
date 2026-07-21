@@ -1,4 +1,4 @@
-# Evaluation Methodology — FieldForge Docs + Copilot + Mesh (Slice 1)
+# Evaluation Methodology — FieldForge Docs + Copilot + Mesh + Ops (Slice 1)
 
 Every metric below follows the same rule: **definition → computation → dataset version → baseline
 → current result → acceptance threshold → limitations**. Values not yet measured are written as
@@ -75,6 +75,30 @@ Mesh's evaluation set is 11 hand-authored scenarios against 2 real, separately-r
 services, not the program brief's ~40. Every scenario spins up an actual Telemetry
 Analyst process and delegates to it over real HTTP — nothing here is mocked.
 
+## Quality-gate methodology (Ops slice 1)
+
+Ops doesn't run its own eval suite against a domain corpus — it evaluates the *other
+three products'* evaluation runs. The gate policy
+(`apps/ops_api/fieldforge_ops_api/gate.py`) is direction-aware:
+
+| Metric class | Direction | Fail condition |
+|---|---|---|
+| Rate/score (recall, accuracy, completion rate, ...) | Higher is better | `current < baseline - 0.02` |
+| Latency (any metric name containing `latency`) | Lower is better | `current > baseline * 1.5` |
+
+The two-branch policy exists because of a real bug: the first version applied the
+rate-metric rule to latency too, so a genuinely faster run failed the gate. Found by
+running the real ingestion script against the real committed reports, fixed, and
+now covered by a regression test — see
+[ADR 0004](adr/0004-ops-quality-gate.md) decision 1 and
+`tests/unit/test_gate.py::test_faster_latency_passes_not_flagged_as_regression`.
+
+The program brief's CI/CD regression demonstration ("prompt change increases
+unsupported claims → gate fails → fix → gate passes → deploy → canary → simulate
+regression → rollback") runs as `tests/integration/test_ops_regression_demo.py`,
+seeded from the real committed Docs baseline, not a scripted GitHub Actions run —
+see ADR 0004 decision 4 for why.
+
 ## Reproducing results
 
 ```bash
@@ -85,4 +109,8 @@ python data/generators/generate_telemetry.py
 python scripts/run_eval.py                 # FieldForge Docs
 python scripts/run_copilot_eval.py          # FieldForge Copilot
 python scripts/run_mesh_eval.py             # FieldForge Mesh
+
+# FieldForge Ops — ingest the reports above and run the quality gate
+uvicorn fieldforge_ops_api.main:app --port 8030 &
+python scripts/ingest_eval_reports.py --ops-url http://localhost:8030
 ```

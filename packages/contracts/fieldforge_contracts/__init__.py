@@ -47,6 +47,17 @@ from fieldforge_contracts.models import (
     RetrievalResult,
     SourceType,
 )
+from fieldforge_contracts.ops_models import (
+    EvaluationRun,
+    GateDecision,
+    GateMetricStatus,
+    MetricComparison,
+    QualityGateResult,
+    Release,
+    ReleaseStatus,
+    RollbackEvent,
+    TraceSpan,
+)
 
 __all__ = [
     "Chunk",
@@ -92,4 +103,13 @@ __all__ = [
     "AnalystFinding",
     "DelegationRecord",
     "MeshIncidentReport",
+    "EvaluationRun",
+    "GateDecision",
+    "GateMetricStatus",
+    "MetricComparison",
+    "QualityGateResult",
+    "Release",
+    "ReleaseStatus",
+    "RollbackEvent",
+    "TraceSpan",
 ]

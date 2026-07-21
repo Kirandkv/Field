@@ -7,6 +7,8 @@ services:
       dockerfile: infra/docker/docs_api.Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      - FIELDFORGE_OPS_TRACE_URL=http://ops_api:8030
     volumes:
       - docs_api_data:/data
 
@@ -18,10 +20,20 @@ services:
       - "8010:8010"
     environment:
       - FIELDFORGE_DOCS_API_URL=http://docs_api:8000
+      - FIELDFORGE_OPS_TRACE_URL=http://ops_api:8030
     depends_on:
       - docs_api
     volumes:
       - copilot_api_data:/data
+
+  ops_api:
+    build:
+      context: .
+      dockerfile: infra/docker/ops_api.Dockerfile
+    ports:
+      - "8030:8030"
+    volumes:
+      - ops_api_data:/data
 
   mesh_telemetry_agent:
     build:
@@ -31,6 +43,7 @@ services:
       - "8021:8021"
     environment:
       - FIELDFORGE_TELEMETRY_AGENT_URL=http://mesh_telemetry_agent:8021
+      - FIELDFORGE_OPS_TRACE_URL=http://ops_api:8030
 
   mesh_commander:
     build:
@@ -38,6 +51,8 @@ services:
       dockerfile: infra/docker/mesh_commander.Dockerfile
     ports:
       - "8022:8022"
+    environment:
+      - FIELDFORGE_OPS_TRACE_URL=http://ops_api:8030
     depends_on:
       - mesh_telemetry_agent
     volumes:
@@ -47,3 +62,4 @@ volumes:
   docs_api_data:
   copilot_api_data:
   mesh_commander_data:
+  ops_api_data:
