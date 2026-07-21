@@ -21,6 +21,17 @@ from fieldforge_contracts.copilot_models import (
     ToolResult,
     ToolStatus,
 )
+from fieldforge_contracts.mesh_models import (
+    A2AArtifact,
+    A2AMessage,
+    A2ATask,
+    A2ATaskStatus,
+    AgentCapability,
+    AgentCard,
+    AnalystFinding,
+    DelegationRecord,
+    MeshIncidentReport,
+)
 from fieldforge_contracts.models import (
     Chunk,
     ChunkingStrategy,
@@ -72,4 +83,13 @@ __all__ = [
     "TelemetryPoint",
     "ToolResult",
     "ToolStatus",
+    "A2AArtifact",
+    "A2AMessage",
+    "A2ATask",
+    "A2ATaskStatus",
+    "AgentCapability",
+    "AgentCard",
+    "AnalystFinding",
+    "DelegationRecord",
+    "MeshIncidentReport",
 ]

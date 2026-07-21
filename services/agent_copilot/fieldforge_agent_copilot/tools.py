@@ -23,8 +23,7 @@ from fieldforge_contracts import (
     ToolResult,
     ToolStatus,
 )
-
-from fieldforge_agent_copilot.telemetry_store import TelemetryStore
+from fieldforge_telemetry import TelemetryStore
 
 DEFAULT_DOCS_API_URL = "http://localhost:8000"
 DEFAULT_HTTP_TIMEOUT_SECONDS = 5.0

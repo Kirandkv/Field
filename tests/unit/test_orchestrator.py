@@ -1,8 +1,8 @@
 import pytest
 from fieldforge_agent_copilot import orchestrator
-from fieldforge_agent_copilot.telemetry_store import TelemetryStore
 from fieldforge_anomaly import DeviceAnomalyDetector
 from fieldforge_contracts import Alert, IncidentClassification, IncidentState, SensorMetric
+from fieldforge_telemetry import TelemetryStore
 
 UNREACHABLE_DOCS_URL = "http://127.0.0.1:1"  # port 1 is never a real HTTP server
 

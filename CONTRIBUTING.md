@@ -22,12 +22,13 @@ mypy packages services apps scripts evals
 pytest -q
 python scripts/run_eval.py
 python scripts/run_copilot_eval.py
+python scripts/run_mesh_eval.py
 ```
 
-All five must pass. The Docs guardrail eval must stay at 100% (see
-`scripts/check_guardrail_gate.py`); the Copilot scenario suite must stay at 100% (it
-exits non-zero on any failing scenario) — those are the two hard quality gates slice 1
-enforces.
+All six must pass. The Docs guardrail eval must stay at 100% (see
+`scripts/check_guardrail_gate.py`); the Copilot and Mesh scenario suites must stay at
+100% (both exit non-zero on any failing scenario) — those are the three hard quality
+gates slice 1 enforces.
 
 ## Conventions
 

@@ -1,4 +1,4 @@
-# Evaluation Methodology — FieldForge Docs + Copilot (Slice 1)
+# Evaluation Methodology — FieldForge Docs + Copilot + Mesh (Slice 1)
 
 Every metric below follows the same rule: **definition → computation → dataset version → baseline
 → current result → acceptance threshold → limitations**. Values not yet measured are written as
@@ -55,6 +55,26 @@ Copilot's evaluation set is 12 hand-authored scenarios, not the program brief's 
 `docs/ROADMAP.md` P1. Every one of the 12 is a real end-to-end assertion (FastAPI TestClient
 against real orchestrator/state-machine/store code), not a placeholder.
 
+## Multi-agent metrics (Mesh slice 1 scope)
+
+| Metric | Definition | Computation |
+|---|---|---|
+| Delegation accuracy | Fraction of investigate-telemetry delegations reaching the expected `safety_decision` and `disagreement_flag` | `evals/datasets/mesh_scenarios_v1.jsonl` mesh-001..004 |
+| Agent-discovery success rate | Fraction of `/agents/discover` calls (valid and deliberately-invalid) returning the expected outcome | mesh-009, mesh-011 |
+| Graceful-degradation rate | Fraction of failure scenarios (no agent registered, agent unreachable, unsupported task type, unknown device) that produced a valid degraded report instead of a crash | mesh-005..008 |
+| Message-schema validity | Whether a completed task recorded a real requester/agent message exchange, not just a bare result | mesh-010 |
+| Conflict-preservation | Whether `disagreement_flag` correctly reflects agreement/disagreement between the rule-based and model-based signals | Folded into delegation accuracy (mesh-004 is the disagreement case) |
+
+Not yet in scope (require a second opinionated agent or async task execution to be
+meaningful, per [ADR 0003](adr/0003-mesh-agent-protocol.md)): true cross-agent
+conflict resolution, duplicate-work rate, cross-agent permission-violation rate
+(only one real agent-to-agent boundary exists), time-to-diagnosis across a longer
+pipeline, cost per incident.
+
+Mesh's evaluation set is 11 hand-authored scenarios against 2 real, separately-running
+services, not the program brief's ~40. Every scenario spins up an actual Telemetry
+Analyst process and delegates to it over real HTTP — nothing here is mocked.
+
 ## Reproducing results
 
 ```bash
@@ -64,4 +84,5 @@ python data/generators/generate_corpus.py
 python data/generators/generate_telemetry.py
 python scripts/run_eval.py                 # FieldForge Docs
 python scripts/run_copilot_eval.py          # FieldForge Copilot
+python scripts/run_mesh_eval.py             # FieldForge Mesh
 ```

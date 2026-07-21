@@ -1,13 +1,14 @@
 # FieldForge AI Suite
 
-Two connected, production-shaped AI services for a fictional industrial operator —
-grounded document Q&A and a human-supervised incident-investigation agent — both
-running fully offline, both refusing rather than guessing when evidence is thin, and
-every number below is from an actual, reproducible run.
+Three connected, production-shaped AI services for a fictional industrial operator —
+grounded document Q&A, a human-supervised incident-investigation agent, and a
+two-agent A2A/MCP investigation mesh — all running fully offline, all refusing or
+escalating rather than guessing when evidence is thin, and every number below is
+from an actual, reproducible run.
 
-> This repo currently implements **FieldForge Docs** (vertical slice 1) and
-> **FieldForge Copilot** (vertical slice 1). Mesh, Ops, and Edge are designed
-> (PRD-level) but not built — see [docs/ROADMAP.md](docs/ROADMAP.md).
+> This repo currently implements **FieldForge Docs**, **FieldForge Copilot**, and
+> **FieldForge Mesh** (each vertical slice 1). Ops and Edge are designed (PRD-level)
+> but not built — see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Measured results
 
@@ -31,9 +32,18 @@ every number below is from an actual, reproducible run.
 | Recovery-after-failure rate | 1.0 | same (unknown device, Docs API unreachable) |
 | Human-decision handling rate | 1.0 | same (approve / reject / modify / idempotency) |
 
-Re-run either yourself: `make eval` (Docs) or `python scripts/run_copilot_eval.py`
-(Copilot). Metrics not listed (nDCG, faithfulness, tool-selection accuracy, agent
-delegation accuracy, ...) are genuinely `TBD` — see
+**FieldForge Mesh** — `evals/reports`, 2 real services, 11 scenarios
+
+| Metric | Value | Dataset |
+|---|---|---|
+| Goal-completion rate | 1.0 | `evals/datasets/mesh_scenarios_v1.jsonl` |
+| Delegation accuracy | 1.0 | same (correct classification via real A2A delegation) |
+| Graceful-degradation rate | 1.0 | same (no agent, unreachable agent, unsupported task, unknown device) |
+| Agent-discovery success rate | 1.0 | same (valid + deliberately-invalid discovery) |
+
+Re-run any of these yourself: `make check` runs all three. Metrics not listed
+(nDCG, faithfulness, tool-selection accuracy, cross-*agent* conflict resolution, ...)
+are genuinely `TBD` — see
 [docs/EVALUATION_METHODOLOGY.md](docs/EVALUATION_METHODOLOGY.md) for why, and what
 unlocks them.
 
@@ -50,13 +60,17 @@ flowchart LR
         CO -->|HTTP /query| DQ
         CO --> CP[ProposedAction] --> CH{Safety Manager approval}
         CH -->|approve| CTK[MaintenanceTicket]
-        CH -->|reject| CR[Rejected]
+    end
+    subgraph Mesh["FieldForge Mesh (2 separate services)"]
+        CMD[Incident Commander] -->|A2A: POST /tasks| TA[Telemetry Analyst]
+        TA --> MCP[telemetry-mcp: real MCP server]
+        CMD --> MR[MeshIncidentReport\nalways requires human approval]
     end
 ```
 
-Docs' full diagrams: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md).
-Copilot's full diagrams (component, sequence, state machine):
-[docs/architecture/COPILOT_OVERVIEW.md](docs/architecture/COPILOT_OVERVIEW.md).
+Docs: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md). Copilot:
+[docs/architecture/COPILOT_OVERVIEW.md](docs/architecture/COPILOT_OVERVIEW.md). Mesh:
+[docs/architecture/MESH_OVERVIEW.md](docs/architecture/MESH_OVERVIEW.md).
 
 ## Quick start
 
@@ -68,18 +82,20 @@ python data/generators/generate_telemetry.py
 
 # Terminal 1 — Docs (Copilot's retrieve_sop tool calls this)
 uvicorn fieldforge_docs_api.main:app --port 8000
-
 # Terminal 2 — Copilot
 uvicorn fieldforge_copilot_api.main:app --port 8010
+# Terminal 3 — Mesh: Telemetry Analyst
+uvicorn fieldforge_mesh_telemetry_agent.main:app --port 8021
+# Terminal 4 — Mesh: Incident Commander
+uvicorn fieldforge_mesh_commander.main:app --port 8022
 ```
 
-Then run the flagship demo — an FF-R07 methane alert that turns out to be a probable
-sensor fault, cross-checked against the SOP FieldForge Docs is serving live:
+Copilot demo — an FF-R07 methane alert investigated end-to-end, cross-checked
+against the SOP FieldForge Docs is serving live:
 
 ```bash
 curl -X POST http://localhost:8010/demo/scenarios/alert-2026-06-14/trigger
 # -> {"state": "awaiting_approval", "classification": "likely_sensor_fault", ...}
-
 curl http://localhost:8010/approvals   # copy the id
 curl -X POST http://localhost:8010/approvals/<id>/decision \
   -H "Content-Type: application/json" -H "X-FieldForge-Role: safety_manager" \
@@ -87,53 +103,75 @@ curl -X POST http://localhost:8010/approvals/<id>/decision \
 # -> {"state": "completed", ...}; GET /tickets now shows the created ticket
 ```
 
-Or run everything (lint, typecheck, tests, both eval suites) in one shot: `make check`.
+Mesh demo — the same incident, investigated by two separate agent processes
+talking A2A instead of one Python function calling another:
+
+```bash
+curl -X POST http://localhost:8022/agents/discover -H "Content-Type: application/json" \
+  -d '{"endpoint":"http://localhost:8021"}'
+curl -X POST http://localhost:8022/incidents -H "Content-Type: application/json" \
+  -d '{"device_id":"FF-R07","value":1180,"triggered_at":"2026-06-14T14:32:21+00:00","window_seconds":42,"corroborating_device_id":"FIX-B3-02"}'
+# -> {"safety_decision": "recommend_recalibration_pending_safety_review",
+#     "requires_human_approval": true, "analyst_finding": {...}, "delegation_log": [...]}
+```
+
+Or run everything (lint, typecheck, tests, all three eval suites) in one shot: `make check`.
 
 ## Problem
 
-Industrial field teams need fast, trustworthy answers from manuals and SOPs, and fast,
-trustworthy triage of sensor alerts — and a wrong or fabricated answer in either case
-("this reading is fine, resume the robot") is a safety issue, not an inconvenience.
-Both products in this suite are built around that constraint: Docs answers are
-extractive and cited; Copilot never takes a state-changing action without a logged
-human approval.
+Industrial field teams need fast, trustworthy answers from manuals and SOPs, fast
+triage of sensor alerts, and coordinated investigation across specialized agents —
+and a wrong or fabricated answer in any of these ("this reading is fine, resume the
+robot") is a safety issue, not an inconvenience. Every product in this suite is built
+around that constraint: Docs answers are extractive and cited; Copilot never takes a
+state-changing action without a logged human approval; Mesh's Incident Commander has
+*no execution capability at all* — it can only investigate and escalate.
 
-## Why this is different from a demo RAG app / demo agent
+## Why this is different from a demo RAG app / demo agent / demo multi-agent system
 
-- **No API key required to run either service.** Docs is BM25 + a deterministic
-  extractive adapter. Copilot's only "model" is a real scikit-learn `IsolationForest`
-  fit on synthetic telemetry — no LLM call anywhere in the default path.
-- **The two services actually talk to each other.** Copilot's `retrieve_sop` tool is a
-  real HTTP call to the Docs API, not a shared in-process import — see
-  [ADR 0002](docs/adr/0002-copilot-agent-architecture.md). Kill the Docs API and
-  Copilot degrades (no SOP evidence) instead of crashing — tested, not asserted.
-- **Human approval is enforced server-side.** `POST /approvals/{id}/decision` checks
-  `X-FieldForge-Role: safety_manager` in the API layer, not the UI — try it with the
-  wrong role and get a 403, not a warning toast.
+- **No API key required to run any service.** Docs is BM25 + a deterministic
+  extractive adapter. Copilot and Mesh's only "model" is a real scikit-learn
+  `IsolationForest` fit on synthetic telemetry — no LLM call anywhere in the default path.
+- **The services actually talk to each other, over real processes.** Copilot's
+  `retrieve_sop` and Mesh's Incident Commander both make genuine HTTP calls to peer
+  services, not shared in-process imports. Kill any dependency and the caller
+  degrades — tested, not asserted (`tests/unit/test_orchestrator.py`,
+  `tests/integration/test_mesh_commander_api.py`).
+- **`telemetry-mcp` is a real MCP server** built on Anthropic's official SDK — connect
+  any MCP client to it, not just this suite's own agents.
+- **Human approval is enforced server-side**, not in a UI. Copilot checks
+  `X-FieldForge-Role: safety_manager` in the API layer; Mesh's Safety Officer sets
+  `requires_human_approval=true` on every single code path, with no exception.
 - **Every metric above is measured by the same script CI runs.** No separate "demo
   numbers" path.
 
 ## Features (implemented)
 
 **FieldForge Docs**: `.txt`/`.md`/`.pdf` ingestion, fixed-token chunking with full
-provenance, BM25 retrieval, input/retrieval/output guardrails (injection scanning on
-both the query and every retrieved chunk), FastAPI with correlation IDs.
+provenance, BM25 retrieval, input/retrieval/output guardrails, FastAPI with
+correlation IDs.
 
 **FieldForge Copilot**: explicit 12-state incident state machine, 6 investigation
-tools (device/telemetry lookup, Isolation Forest anomaly scoring, cross-service SOP
-retrieval, ticket drafting), human-approval gate with server-enforced RBAC,
-idempotent decisions (409 on replay), graceful degradation on tool/service failure.
+tools, cross-service SOP retrieval, human-approval gate with server-enforced RBAC,
+idempotent decisions, graceful degradation on tool/service failure.
+
+**FieldForge Mesh**: 2 separately-deployable agents (Incident Commander, Telemetry
+Analyst); real HTTP agent discovery (`/.well-known/agent-card`); A2A-shaped task
+lifecycle with shared-secret auth; a real `telemetry-mcp` MCP server sharing its tool
+implementations with the A2A path; disagreement-preserving incident reports; Safety
+Officer policy that always requires human approval.
 
 ## Not yet implemented (planned, tracked in [docs/ROADMAP.md](docs/ROADMAP.md))
 
 Docs: OCR, multimodal QA, Qdrant dense/hybrid retrieval, bilingual corpus, web UI,
-full RBAC, live LLM adapter. Copilot: 11 of the 17 program-brief tools, the
-program brief's ≥50-scenario eval suite (currently 12), `PARTIAL`/`CANCELLED` states,
-retry/escalation policy, web UI. Suite-wide: FieldForge Mesh, Ops, Edge.
+full RBAC, live LLM adapter. Copilot: 11 of 17 program-brief tools, the ≥50-scenario
+eval suite (currently 12), `PARTIAL`/`CANCELLED` states, retry/escalation. Mesh: 5 of
+7 agent roles, 4 of 5 MCP servers, true cross-*agent* disagreement, async task
+execution, the ~40-scenario eval suite (currently 11). Suite-wide: FieldForge Ops, Edge.
 
 ## Security
 
-Threat model (STRIDE-flavored, both products, implemented vs. planned):
+Threat model (STRIDE-flavored, all three products, implemented vs. planned):
 [docs/threat-model/THREAT_MODEL.md](docs/threat-model/THREAT_MODEL.md). Adversarial/
 scenario eval cases: [evals/datasets/](evals/datasets/). Reporting: [SECURITY.md](SECURITY.md).
 
@@ -142,16 +180,19 @@ scenario eval cases: [evals/datasets/](evals/datasets/). Reporting: [SECURITY.md
 - **Docs refusal accuracy is 0.9, not 1.0** — BM25 has no semantic relevance floor, so
   two deliberately off-topic eval questions still score nonzero on shared common
   words instead of triggering a refusal. Disclosed in
-  `services/retrieval/fieldforge_retrieval/sparse.py` and the eval methodology doc,
-  not hidden behind a threshold hack.
-- **Copilot's eval set is 12 scenarios, not 50.** Every one is a real end-to-end
-  assertion; scaling to 50 is tracked, not faked.
-- **Copilot's corroboration lookup uses a wider time window than the alert's own
-  duration** (documented in `orchestrator.py`) because the synthetic fixed sensors
-  sample every 10 minutes, not continuously — a real deployment's sensor sampling
-  rate would inform this differently.
-- Small corpora (7 documents, 3 devices) — metrics are meaningful for this project's
-  own regression testing, not representative of production scale.
+  `services/retrieval/fieldforge_retrieval/sparse.py`, not hidden behind a threshold hack.
+- **Copilot's eval set is 12 scenarios, Mesh's is 11** — not the program brief's ~50
+  and ~40. Every one is a real end-to-end assertion; scaling up is tracked, not faked.
+- **Mesh's "disagreement preservation" is between two signals from one analyst**
+  (rule-based corroboration vs. model-based anomaly detection), not between two
+  independent agents — a true cross-agent disagreement needs a second opinionated
+  agent, which doesn't exist yet. Disclosed in
+  [ADR 0003](docs/adr/0003-mesh-agent-protocol.md) decision 5.
+- **Mesh's A2A protocol is hand-rolled**, following the public A2A vocabulary but not
+  built on the `a2a-sdk` package — see ADR 0003 decision 2 for why, and what
+  reconciling against the official spec would take.
+- Small corpora/fleets (7 documents, 3 devices) — metrics are meaningful for this
+  project's own regression testing, not representative of production scale.
 
 ## Data
 

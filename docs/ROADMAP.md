@@ -58,10 +58,33 @@ All six shipped; see [evals/reports](../evals/reports) for the measured baseline
 - English/Arabic incident summaries
 - LangGraph adoption once Mesh needs multi-agent graph composition (ADR 0002 decision 1)
 
-## P1 — Mesh vertical slice (planned, not started)
+## P0 — FieldForge Mesh slice 1 (done)
 
-- 2 agents minimum, ≥1 independently deployable, ≥1 original MCP server, ≥1 real A2A task exchange
-- Agent permission matrix, conflict-preservation policy
+| ID | Title | Files | Acceptance criteria | Complexity | Depends on |
+|---|---|---|---|---|---|
+| MESH-001 | A2A/MCP contracts | `packages/contracts/mesh_models.py` | AgentCard/A2ATask/A2ATaskStatus/AnalystFinding/DelegationRecord/MeshIncidentReport | S | — |
+| MESH-002 | Shared telemetry service extraction | `services/telemetry/` | `TelemetryStore` moved out of Copilot's package so Mesh doesn't depend on Copilot internals; Copilot re-tested green after the move | S | — |
+| MESH-003 | `telemetry-mcp` real MCP server | `services/mcp_telemetry/` | Official `mcp` SDK; 4 tools (query_telemetry, compare_devices, run_anomaly_detection, get_sensor_metadata); tool listing + tool call tested via the real SDK | M | MESH-001, MESH-002 |
+| MESH-004 | Telemetry Analyst agent | `apps/mesh_telemetry_agent/` | Separately deployable; agent-card endpoint; A2A task create/get/cancel; shared-secret auth; shares tool implementations with MESH-003 | M | MESH-003 |
+| MESH-005 | Incident Commander agent | `apps/mesh_commander/` | Separately deployable; real HTTP agent discovery; A2A delegation; in-process Safety Officer (always requires human approval); disagreement-preserving report | M | MESH-004 |
+| MESH-006 | Tests + eval scenarios | `tests/`, `evals/datasets/mesh_scenarios_v1.jsonl` | 37 new tests incl. a real second-process integration test (uvicorn in a background thread, not mocked HTTP); 11 scenarios (delegation ×4, degradation ×4, discovery ×3); baseline committed | M | MESH-005 |
+
+All six shipped; see [evals/reports](../evals/reports) for the measured baseline
+(`goal_completion_rate=1.0`, `delegation_accuracy=1.0`, `graceful_degradation_rate=1.0`,
+`agent_discovery_success_rate=1.0` on the current 11-scenario set).
+
+## P1 — Mesh milestone 2 (planned, not started)
+
+- Remaining agent roles: Document Intelligence, Vision Inspection, Maintenance Planner, Safety
+  Officer as its own service, Report Agent
+- Remaining MCP servers: `documents-mcp`, `robot-health-mcp`, `maintenance-mcp`, `deployment-mcp`
+- True cross-*agent* disagreement (today's disagreement is between two signals from one analyst —
+  ADR 0003 decision 5) once a second opinionated agent (e.g. Vision Inspection) exists
+- Async task execution + real polling (tasks complete synchronously today — ADR 0003 decision 6)
+- Scale evaluation scenarios from 11 to the program brief's ~40
+- Live delegation graph UI, agent-capability registry UI, permissions explorer
+- Scoped per-capability agent tokens (today's shared secret is all-or-nothing)
+- Reconcile the hand-rolled A2A shape against the official `a2a-sdk`/spec — ADR 0003 decision 2
 
 ## P1 — Ops vertical slice (planned, not started)
 

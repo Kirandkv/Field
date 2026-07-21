@@ -45,11 +45,16 @@ supplied and reviewed.
 
 ## Third-party licenses in use
 
-Tracked exactly in the lock file / `pyproject.toml`. As of the Docs + Copilot slice 1s: `fastapi`,
-`pydantic`, `rank-bm25`, `pypdf`, `uvicorn`, `httpx`, `scikit-learn`, `numpy`, `pytest` — all
-permissively licensed (MIT/BSD/Apache-2.0). No copyleft dependency is used. Re-verify with a
-license-checker in CI (see `.github/workflows/pr.yml`) rather than trusting this static note as
-time passes.
+Tracked exactly in the lock file / `pyproject.toml`. As of the Docs + Copilot + Mesh slice 1s:
+`fastapi`, `pydantic`, `rank-bm25`, `pypdf`, `uvicorn`, `httpx`, `scikit-learn`, `numpy`, `mcp`,
+`pytest` — all permissively licensed (MIT/BSD/Apache-2.0). No copyleft dependency is used.
+Re-verify with a license-checker in CI (see `.github/workflows/pr.yml`) rather than trusting this
+static note as time passes.
+
+`mcp` (Anthropic's official Model Context Protocol Python SDK, MIT) backs `services/mcp_telemetry`
+— see [ADR 0003](adr/0003-mesh-agent-protocol.md) decision 3 for why the real SDK is used there
+specifically, while the A2A-shaped HTTP surface (`apps/mesh_commander`,
+`apps/mesh_telemetry_agent`) is hand-rolled rather than built on the `a2a-sdk` package (decision 2).
 
 `scikit-learn`'s `IsolationForest` (Liu, Ting & Zhou, 2008, "Isolation Forest") is used via its
 public API in `services/anomaly` — the algorithm is not reimplemented, only called.

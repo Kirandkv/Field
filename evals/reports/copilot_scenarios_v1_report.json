@@ -6,8 +6,8 @@
   "unauthorized_action_prevention_rate": 1.0,
   "recovery_after_failure_rate": 1.0,
   "human_decision_handling_rate": 1.0,
-  "latency_ms_p50": 3077.268,
-  "latency_ms_p95": 3328.095,
+  "latency_ms_p50": 3617.192,
+  "latency_ms_p95": 3741.975,
   "detail": [
     {
       "id": "cop-001",
@@ -17,7 +17,7 @@
         "classification": "likely_sensor_fault",
         "state": "awaiting_approval"
       },
-      "latency_ms": 3077.268
+      "latency_ms": 3580.933
     },
     {
       "id": "cop-002",
@@ -27,7 +27,7 @@
         "classification": "likely_sensor_fault",
         "state": "awaiting_approval"
       },
-      "latency_ms": 2948.398
+      "latency_ms": 3555.875
     },
     {
       "id": "cop-003",
@@ -37,7 +37,7 @@
         "classification": "likely_real_event",
         "state": "awaiting_approval"
       },
-      "latency_ms": 3085.895
+      "latency_ms": 3617.192
     },
     {
       "id": "cop-004",
@@ -47,7 +47,7 @@
         "classification": "insufficient_evidence",
         "state": "requesting_more_evidence"
       },
-      "latency_ms": 3050.096
+      "latency_ms": 3512.403
     },
     {
       "id": "cop-005",
@@ -57,7 +57,7 @@
         "state": "failed",
         "http_status": 201
       },
-      "latency_ms": 42.013
+      "latency_ms": 51.751
     },
     {
       "id": "cop-006",
@@ -67,7 +67,7 @@
         "state": "completed",
         "ticket_count": 1
       },
-      "latency_ms": 3070.713
+      "latency_ms": 3859.776
     },
     {
       "id": "cop-007",
@@ -77,7 +77,7 @@
         "state": "rejected",
         "ticket_count": 0
       },
-      "latency_ms": 3242.07
+      "latency_ms": 3741.975
     },
     {
       "id": "cop-008",
@@ -87,7 +87,7 @@
         "state": "completed",
         "ticket_count": 1
       },
-      "latency_ms": 3249.451
+      "latency_ms": 3617.533
     },
     {
       "id": "cop-009",
@@ -97,7 +97,7 @@
         "http_status": 403,
         "state_after": "awaiting_approval"
       },
-      "latency_ms": 3010.272
+      "latency_ms": 3638.781
     },
     {
       "id": "cop-010",
@@ -107,7 +107,7 @@
         "http_status": 403,
         "state_after": "awaiting_approval"
       },
-      "latency_ms": 3328.095
+      "latency_ms": 3524.828
     },
     {
       "id": "cop-011",
@@ -117,7 +117,7 @@
         "first_status": 200,
         "second_status": 409
       },
-      "latency_ms": 3414.905
+      "latency_ms": 3667.072
     },
     {
       "id": "cop-012",
@@ -127,7 +127,7 @@
         "state": "awaiting_approval",
         "has_sop_evidence": false
       },
-      "latency_ms": 3074.259
+      "latency_ms": 3455.638
     }
   ],
   "limitations": "12 hand-authored scenarios over a 3-device synthetic fleet; not the 50-scenario suite the program brief specifies for a full Copilot evaluation \u2014 see docs/ROADMAP.md. Every scenario here is a real assertion against real code, not a placeholder."

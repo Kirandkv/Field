@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 
 from fieldforge_agent_copilot import tools
-from fieldforge_agent_copilot.telemetry_store import TelemetryStore
 from fieldforge_anomaly import DeviceAnomalyDetector
 from fieldforge_contracts import (
     DataQualityFlag,
@@ -10,6 +9,7 @@ from fieldforge_contracts import (
     TelemetryPoint,
     ToolStatus,
 )
+from fieldforge_telemetry import TelemetryStore
 
 
 def _point(value, quality=DataQualityFlag.OK):

@@ -7,7 +7,8 @@ industrial operator, "FieldForge Industries," and its fleet of mobile inspection
 fixed environmental sensors. No real company, employer, customer, incident, or individual is
 represented. This card covers two corpora: the document corpus (manuals, SOPs, inspection report,
 maintenance log — FieldForge Docs) and the telemetry corpus (device registry, sensor time series,
-alert scenarios — FieldForge Copilot). The two are deliberately consistent: the flagship telemetry
+alert scenarios — shared by FieldForge Copilot and FieldForge Mesh, no separate data generated for
+Mesh). The two corpora are deliberately consistent: the flagship telemetry
 incident (`data/samples/telemetry/alerts.json`, `alert-2026-06-14`) matches the narrative already
 written into `data/samples/inspection_report_2026_06_14_site_b.md`.
 

@@ -1,6 +1,5 @@
-# FieldForge AI Suite — slice 1. Two services, no Postgres/Qdrant/Redis dependency yet
-# (see ADR 0001 and docs/ROADMAP.md — those land at milestone M2 alongside dense
-# retrieval and a real multi-writer deployment scenario that justifies them).
+# FieldForge AI Suite — slice 1. No Postgres/Qdrant/Redis dependency yet (see
+# ADR 0001 and docs/ROADMAP.md — those land at milestone M2).
 services:
   docs_api:
     build:
@@ -24,6 +23,27 @@ services:
     volumes:
       - copilot_api_data:/data
 
+  mesh_telemetry_agent:
+    build:
+      context: .
+      dockerfile: infra/docker/mesh_telemetry_agent.Dockerfile
+    ports:
+      - "8021:8021"
+    environment:
+      - FIELDFORGE_TELEMETRY_AGENT_URL=http://mesh_telemetry_agent:8021
+
+  mesh_commander:
+    build:
+      context: .
+      dockerfile: infra/docker/mesh_commander.Dockerfile
+    ports:
+      - "8022:8022"
+    depends_on:
+      - mesh_telemetry_agent
+    volumes:
+      - mesh_commander_data:/data
+
 volumes:
   docs_api_data:
   copilot_api_data:
+  mesh_commander_data:

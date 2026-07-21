@@ -28,10 +28,10 @@ from fieldforge_contracts import (
     TelemetryPoint,
     ToolResult,
 )
+from fieldforge_telemetry import TelemetryStore
 
 from fieldforge_agent_copilot import tools
 from fieldforge_agent_copilot.state_machine import AgentStateMachine
-from fieldforge_agent_copilot.telemetry_store import TelemetryStore
 
 HIGH_SEVERITY_PPM = 1000
 HIGH_SEVERITY_MIN_WINDOW_S = 30

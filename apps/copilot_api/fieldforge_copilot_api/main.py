@@ -5,7 +5,6 @@ import logging
 from fastapi import FastAPI, Header, HTTPException
 from fieldforge_agent_copilot.orchestrator import investigate
 from fieldforge_agent_copilot.state_machine import AgentStateMachine, InvalidTransitionError
-from fieldforge_agent_copilot.telemetry_store import TelemetryStore
 from fieldforge_anomaly import DeviceAnomalyDetector
 from fieldforge_contracts import (
     Alert,
@@ -18,6 +17,7 @@ from fieldforge_contracts import (
     Role,
 )
 from fieldforge_observability import configure_json_logging, get_correlation_id, new_trace_id
+from fieldforge_telemetry import TelemetryStore
 from pydantic import BaseModel
 
 from fieldforge_copilot_api.config import settings

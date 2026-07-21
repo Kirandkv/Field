@@ -41,8 +41,17 @@ jobs:
       - name: Run FieldForge Copilot evaluation suite
         run: python scripts/run_copilot_eval.py
 
+      - name: Run FieldForge Mesh evaluation suite
+        run: python scripts/run_mesh_eval.py
+
       - name: Docker build — Docs API
         run: docker build -f infra/docker/docs_api.Dockerfile -t fieldforge-docs-api:pr .
 
       - name: Docker build — Copilot API
         run: docker build -f infra/docker/copilot_api.Dockerfile -t fieldforge-copilot-api:pr .
+
+      - name: Docker build — Mesh Telemetry Analyst
+        run: docker build -f infra/docker/mesh_telemetry_agent.Dockerfile -t fieldforge-mesh-telemetry-agent:pr .
+
+      - name: Docker build — Mesh Incident Commander
+        run: docker build -f infra/docker/mesh_commander.Dockerfile -t fieldforge-mesh-commander:pr .

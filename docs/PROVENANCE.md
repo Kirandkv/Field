@@ -11,9 +11,11 @@ of an empty file.
 | `services/ingestion/*` | Original | Repo license | — | No | Uses `pypdf` (Apache-2.0/BSD) via its public API |
 | `services/retrieval/*` | Original | Repo license | — | No | Uses `rank_bm25` (Apache-2.0) via its public API; BM25/RRF are published algorithms, not copied code |
 | `services/guardrails/*` | Original | Repo license | — | No | Regex patterns hand-written for this project's threat model |
-| `apps/docs_api/*`, `apps/copilot_api/*` | Original | Repo license | — | No | Uses `fastapi`/`uvicorn` via their public API |
+| `apps/docs_api/*`, `apps/copilot_api/*`, `apps/mesh_commander/*`, `apps/mesh_telemetry_agent/*` | Original | Repo license | — | No | Uses `fastapi`/`uvicorn` via their public API |
 | `services/agent_copilot/*` | Original | Repo license | — | No | State machine, tools, orchestrator written for this project |
+| `services/telemetry/*` | Original | Repo license | — | No | Shared by Copilot and Mesh — extracted from Copilot once Mesh needed it too |
 | `services/anomaly/*` | Original | Repo license | — | No | Uses `scikit-learn`'s `IsolationForest` (BSD-3-Clause) via its public API |
+| `services/mcp_telemetry/*` | Original | Repo license | — | No | Uses the official `mcp` SDK (MIT) via its public API — see ADR 0003 decision 3 |
 | `data/generators/*`, `data/samples/*` | Original | Repo license | — | No | Fictional content, see [DATA_CARD.md](../DATA_CARD.md) |
 | `evals/*` | Original | Repo license | — | No | Hand-authored QA/adversarial/scenario cases |
 

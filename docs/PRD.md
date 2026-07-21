@@ -88,7 +88,7 @@ get a grounded, cited answer — running end-to-end locally with one command, wi
 | M1 | Docs vertical slice 1 (this doc, §4) | Done | — |
 | M2 | Docs: OCR + multimodal + Qdrant hybrid retrieval + web UI | Planned | M1 |
 | M3 | Copilot vertical slice (single agent, human approval, one flagship scenario) | Done | M1 |
-| M4 | Mesh vertical slice (2+ agents, one MCP server, one A2A task) | Planned | M3 |
+| M4 | Mesh vertical slice (2+ agents, one MCP server, one A2A task) | Done | M3 |
 | M5 | Ops vertical slice (trace explorer + one quality gate demo) | Planned | M3 |
 | M6 | Edge profile | Planned | M2 |
 
@@ -120,3 +120,32 @@ architecture decisions.
 11 of the program brief's 17 tools, `PARTIAL`/`CANCELLED` states, automatic
 retry/escalation, voice/bilingual briefings, a web UI, and the ≥50-scenario eval
 suite (currently 12) — see [docs/ROADMAP.md](ROADMAP.md).
+
+## 8. Milestone M4: FieldForge Mesh — vertical slice 1
+
+**Goal:** two independently deployable agents communicating over a real A2A-shaped
+protocol, plus one original MCP server, investigating the same flagship incident
+Docs and Copilot already know about — proving the suite is connected, not three
+demos sharing a README.
+
+### User story
+> As an operations analyst, I ask Incident Commander to investigate an alert. It
+> discovers the Telemetry Analyst agent, delegates the investigation over a real
+> network call, and returns a report that preserves disagreement between its two
+> independent signals rather than picking one — and, like Copilot, never takes
+> action on its own.
+
+### In scope for slice 1
+Two separately-deployable FastAPI services (Incident Commander, Telemetry Analyst);
+a real MCP server (`telemetry-mcp`, official SDK) exposing the same tool
+implementations the A2A path uses; agent discovery over a genuine HTTP call to
+`/.well-known/agent-card`; shared-secret A2A auth; a Safety Officer policy that
+always requires human approval; 11 scenario-level eval cases run against two live
+processes. See [docs/architecture/MESH_OVERVIEW.md](architecture/MESH_OVERVIEW.md)
+and [ADR 0003](adr/0003-mesh-agent-protocol.md).
+
+### Explicitly out of scope for slice 1
+5 of the program brief's 7 agent roles, 4 of its 5 MCP servers, true cross-agent
+(rather than cross-signal) disagreement, async task execution, OAuth/mTLS
+agent-to-agent auth, and the ~40-scenario eval suite (currently 11) — see
+[docs/ROADMAP.md](ROADMAP.md).
