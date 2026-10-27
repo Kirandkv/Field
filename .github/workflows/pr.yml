@@ -3,7 +3,7 @@ name: PR checks
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
   lint-test-eval:
